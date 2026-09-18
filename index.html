@@ -73,6 +73,8 @@
             <button class="tool-chip" onclick="openFinanceTracker()">💰 Finance</button>
             <button class="tool-chip" onclick="openCodeReviewer()">💻 Code</button>
             <button class="tool-chip" onclick="openStudyBuddy()">📚 Study</button>
+            <button class="tool-chip" onclick="openWebsiteBuilder()">🌐 Web</button>
+            <button class="tool-chip" onclick="openAgentMode()">🤖 Agent</button>
         </nav>
 
         <!-- CHAT AREA -->
@@ -779,6 +781,206 @@ Rumus penting:
             </div>
         </div>
     </div>
+
+    <!-- ═══ AI AGENT MODE PANEL ═══ -->
+<div class="modal" id="agentModal">
+    <div class="modal-box" style="max-width: 800px;">
+        <div class="modal-header">
+            <h3>🤖 AI AGENT MODE</h3>
+            <button class="modal-close" onclick="closeModal('agentModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <!-- Info -->
+            <div class="ag-info-banner">
+                <div class="ag-info-icon">💡</div>
+                <div class="ag-info-text">
+                    <strong>AI Agent Mode</strong> — bikin task otomatis yang jalan sendiri.<br>
+                    Contoh: "Setiap jam 7 pagi, kirim reminder minum air" atau "Tiap Senin, bikin catatan mingguan".
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="ag-tabs">
+                <button class="ag-tab active" onclick="agSetTab('create', this)">➕ Buat Agent</button>
+                <button class="ag-tab" onclick="agSetTab('active', this)">⚡ Aktif</button>
+                <button class="ag-tab" onclick="agSetTab('presets', this)">🎯 Preset</button>
+                <button class="ag-tab" onclick="agSetTab('logs', this)">📋 Log</button>
+            </div>
+
+            <!-- Create Tab -->
+            <div class="ag-content active" data-ag-tab="create">
+                <div class="field">
+                    <label>📝 Nama Agent</label>
+                    <input type="text" id="agName" class="sb-input" placeholder="contoh: Reminder Minum Air">
+                </div>
+
+                <div class="field">
+                    <label>🎯 Trigger (Kapan jalan?)</label>
+                    <select id="agTriggerType" class="sb-select" onchange="agUpdateTriggerFields()">
+                        <option value="time">⏰ Setiap Hari (jam tertentu)</option>
+                        <option value="interval">⏱️ Setiap X Menit</option>
+                        <option value="weekday">📅 Hari Tertentu</option>
+                        <option value="keyword">💬 Keyword di Chat</option>
+                        <option value="once">🎯 Sekali Doang</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic trigger fields -->
+                <div id="agTriggerFields"></div>
+
+                <div class="field">
+                    <label>⚡ Action (Ngapain?)</label>
+                    <select id="agActionType" class="sb-select" onchange="agUpdateActionFields()">
+                        <option value="notify">🔔 Tampilkan Notifikasi</option>
+                        <option value="chat">💬 Tanya AI & Kirim ke Chat</option>
+                        <option value="note">📝 Bikin Catatan</option>
+                        <option value="reminder">⏰ Reminder ke Task</option>
+                        <option value="auto_message">💌 Auto Reply Message</option>
+                        <option value="custom">🧩 Custom JS</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic action fields -->
+                <div id="agActionFields"></div>
+
+                <button class="sb-btn-primary" onclick="agCreateAgent()">💾 Simpan Agent</button>
+            </div>
+
+            <!-- Active Tab -->
+            <div class="ag-content" data-ag-tab="active">
+                <div class="ag-active-list" id="agActiveList"></div>
+            </div>
+
+            <!-- Presets Tab -->
+            <div class="ag-content" data-ag-tab="presets">
+                <div class="ag-presets-grid" id="agPresetsGrid"></div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="ag-content" data-ag-tab="logs">
+                <div class="ag-logs-header">
+                    <span>📋 Riwayat Agent</span>
+                    <button class="rc-clear-btn" onclick="agClearLogs()">🗑️ Clear</button>
+                </div>
+                <div class="ag-logs-list" id="agLogsList"></div>
+            </div>
+        </div>
+    </div>
+                </div>
+
+    <!-- ═══ WEBSITE BUILDER PANEL ═══ -->
+<div class="modal" id="webBuilderModal">
+    <div class="modal-box" style="max-width: 900px;">
+        <div class="modal-header">
+            <h3>🌐 AI WEBSITE BUILDER</h3>
+            <button class="modal-close" onclick="closeModal('webBuilderModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <!-- Tabs -->
+            <div class="wb-tabs">
+                <button class="wb-tab active" onclick="wbSetTab('generate', this)">✨ Generate</button>
+                <button class="wb-tab" onclick="wbSetTab('templates', this)">📚 Templates</button>
+                <button class="wb-tab" onclick="wbSetTab('projects', this)">💾 Projects</button>
+            </div>
+
+            <!-- Generate Tab -->
+            <div class="wb-content active" data-wb-tab="generate">
+                <div class="field">
+                    <label>📝 Deskripsi Website</label>
+                    <textarea id="wbDesc" class="sb-textarea" placeholder="contoh: Website portfolio pribadi untuk photographer dengan galeri foto dan halaman contact" rows="3"></textarea>
+                </div>
+
+                <div class="wb-row">
+                    <div class="field">
+                        <label>🎨 Style</label>
+                        <select id="wbStyle" class="sb-select">
+                            <option value="modern">✨ Modern & Clean</option>
+                            <option value="dark">🌙 Dark Mode</option>
+                            <option value="minimal">⚪ Minimalis</option>
+                            <option value="playful">🎨 Playful & Colorful</option>
+                            <option value="corporate">💼 Corporate</option>
+                            <option value="glassmorphism">🔮 Glassmorphism</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>🎯 Tipe Website</label>
+                        <select id="wbType" class="sb-select">
+                            <option value="landing">🚀 Landing Page</option>
+                            <option value="portfolio">💼 Portfolio</option>
+                            <option value="blog">📝 Blog</option>
+                            <option value="business">🏢 Business</option>
+                            <option value="product">📦 Product Page</option>
+                            <option value="restaurant">🍽️ Restaurant</option>
+                            <option value="event">🎉 Event</option>
+                            <option value="school">🎓 School/Education</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>🎨 Warna Utama</label>
+                    <div class="wb-color-row">
+                        <input type="color" id="wbColor" value="#d97757" class="wb-color-picker">
+                        <div class="wb-color-presets">
+                            <button class="wb-color-btn" style="background: #d97757" onclick="wbSetColor('#d97757')"></button>
+                            <button class="wb-color-btn" style="background: #0ea5e9" onclick="wbSetColor('#0ea5e9')"></button>
+                            <button class="wb-color-btn" style="background: #10b981" onclick="wbSetColor('#10b981')"></button>
+                            <button class="wb-color-btn" style="background: #8b5cf6" onclick="wbSetColor('#8b5cf6')"></button>
+                            <button class="wb-color-btn" style="background: #ec4899" onclick="wbSetColor('#ec4899')"></button>
+                            <button class="wb-color-btn" style="background: #1a1a24" onclick="wbSetColor('#1a1a24')"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="sb-btn-primary" onclick="wbGenerate()">🤖 Generate Website</button>
+
+                <!-- Preview -->
+                <div class="wb-preview-wrap" id="wbPreviewWrap" style="display: none;">
+                    <div class="wb-preview-header">
+                        <div class="wb-preview-title">👁️ Live Preview</div>
+                        <div class="wb-device-toggle">
+                            <button class="wb-device-btn active" onclick="wbSetDevice('desktop', this)" title="Desktop">🖥️</button>
+                            <button class="wb-device-btn" onclick="wbSetDevice('tablet', this)" title="Tablet">📱</button>
+                            <button class="wb-device-btn" onclick="wbSetDevice('mobile', this)" title="Mobile">📱</button>
+                        </div>
+                    </div>
+                    <div class="wb-device-frame desktop" id="wbDeviceFrame">
+                        <iframe id="wbPreviewFrame" class="wb-preview-frame"></iframe>
+                    </div>
+                    <div class="wb-preview-actions">
+                        <button class="wb-action-btn" onclick="wbViewFullscreen()">🔍 Fullscreen</button>
+                        <button class="wb-action-btn" onclick="wbExportHTML()">📥 Export HTML</button>
+                        <button class="wb-action-btn" onclick="wbCopyCode()">📋 Copy Code</button>
+                        <button class="wb-action-btn" onclick="wbSaveProject()">💾 Save Project</button>
+                    </div>
+
+                    <!-- Code Editor Tabs -->
+                    <div class="wb-code-tabs">
+                        <button class="wb-code-tab active" onclick="wbSetCodeTab('html', this)">HTML</button>
+                        <button class="wb-code-tab" onclick="wbSetCodeTab('css', this)">CSS</button>
+                        <button class="wb-code-tab" onclick="wbSetCodeTab('js', this)">JS</button>
+                    </div>
+                    <textarea class="wb-code-editor" id="wbCodeEditor" spellcheck="false"></textarea>
+                    <button class="wb-refresh-btn" onclick="wbRefreshPreview()">🔄 Refresh Preview</button>
+                </div>
+            </div>
+
+            <!-- Templates Tab -->
+            <div class="wb-content" data-wb-tab="templates">
+                <div class="wb-templates-grid" id="wbTemplatesGrid"></div>
+            </div>
+
+            <!-- Projects Tab -->
+            <div class="wb-content" data-wb-tab="projects">
+                <div class="wb-projects-header">
+                    <span>💾 Project Tersimpan</span>
+                    <button class="rc-clear-btn" onclick="wbClearProjects()">🗑️ Clear All</button>
+                </div>
+                <div class="wb-projects-list" id="wbProjectsList"></div>
+            </div>
+        </div>
+    </div>
+</div>
     
     <!-- ═══ MODALS ═══ -->
     <div class="modal" id="devModal">
