@@ -2671,3 +2671,395 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('💰 FITUR v5.1: Finance Tracker loaded!');
+/* ═══════════════════════════════════════
+   FITUR #5: AI CODE REVIEWER
+═══════════════════════════════════════ */
+
+function crUpdateLineNumbers() {
+    var code = document.getElementById('crCodeInput').value;
+    var lines = code.split('\n').length;
+    var nums = '';
+    for (var i = 1; i <= Math.max(lines, 20); i++) nums += i + '\n';
+    document.getElementById('crLineNumbers').textContent = nums;
+}
+
+function crSyncScroll() {
+    var editor = document.getElementById('crCodeInput');
+    var lineNums = document.getElementById('crLineNumbers');
+    if (lineNums) lineNums.scrollTop = editor.scrollTop;
+}
+
+function crClear() {
+    if (!confirm('Bersihkan kode?')) return;
+    document.getElementById('crCodeInput').value = '';
+    document.getElementById('crResult').style.display = 'none';
+    crUpdateLineNumbers();
+    showToast('🗑️ Kode dibersihkan');
+}
+
+function crUpload() {
+    document.getElementById('crFileInput').click();
+}
+
+function crHandleUpload(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        document.getElementById('crCodeInput').value = ev.target.result;
+        /* Auto-detect language from extension */
+        var ext = file.name.split('.').pop().toLowerCase();
+        var langMap = { js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript', py: 'python', php: 'php', java: 'java', go: 'go', rs: 'rust', cpp: 'cpp', cc: 'cpp', cxx: 'cpp', cs: 'csharp', html: 'html', css: 'css', sql: 'sql', sh: 'bash', bash: 'bash' };
+        if (langMap[ext]) document.getElementById('crLanguage').value = langMap[ext];
+        crUpdateLineNumbers();
+        showToast('📎 ' + file.name + ' loaded');
+    };
+    reader.readAsText(file);
+}
+
+function crLoadSample() {
+    var lang = document.getElementById('crLanguage').value;
+    var samples = {
+        javascript: 'function getUserData(id) {\n  var user = database.query("SELECT * FROM users WHERE id = " + id);\n  if (user) {\n    var pass = user.password;\n    console.log("Password: " + pass);\n    return user;\n  }\n}\n\nfunction sum(arr) {\n  var total = 0;\n  for (var i = 0; i < arr.length; i++) {\n    total = total + arr[i];\n  }\n  return total;\n}',
+        python: 'def get_user(user_id):\n    query = f"SELECT * FROM users WHERE id = {user_id}"\n    user = db.execute(query)\n    password = user["password"]\n    print(f"Password: {password}")\n    return user\n\ndef calculate(numbers):\n    result = 0\n    for i in range(len(numbers)):\n        result = result + numbers[i]\n    return result',
+        php: '<?php\n$id = $_GET["id"];\n$query = "SELECT * FROM users WHERE id = $id";\n$result = mysqli_query($conn, $query);\n$user = mysqli_fetch_assoc($result);\necho "Password: " . $user["password"];\n\nfunction sum($arr) {\n  $total = 0;\n  for ($i = 0; $i < count($arr); $i++) {\n    $total = $total + $arr[$i];\n  }\n  return $total;\n}\n?>'
+    };
+    document.getElementById('crCodeInput').value = samples[lang] || samples.javascript;
+    crUpdateLineNumbers();
+    showToast('📄 Sample loaded');
+}
+
+/* ═══ REVIEW ═══ */
+function crReviewCode() {
+    var code = document.getElementById('crCodeInput').value.trim();
+    if (!code) { showToast('⚠️ Paste code dulu'); return; }
+    if (code.length < 10) { showToast('⚠️ Code terlalu pendek'); return; }
+    
+    var language = document.getElementById('crLanguage').value;
+    var optBug = document.getElementById('crOptBug').checked;
+    var optPerf = document.getElementById('crOptPerf').checked;
+    var optSec = document.getElementById('crOptSecurity').checked;
+    var optStyle = document.getElementById('crOptStyle').checked;
+    
+    var result = document.getElementById('crResult');
+    result.style.display = 'block';
+    result.innerHTML = '<div class="cr-loading"><div class="rc-spinner"></div><div style="font-size: 12px; color: var(--text-muted);">AI sedang review code lu... 🔍</div></div>';
+    
+    var apiKey = (typeof config !== 'undefined' && config.apiKey) ? config.apiKey : '';
+    
+    /* Always run local review first (fast) */
+    var localReview = crLocalReview(code, language);
+    
+    if (!apiKey || apiKey.length < 10) {
+        setTimeout(function() {
+            crDisplayReview(localReview, code, language, true);
+            showToast('💡 Demo review — isi API key untuk AI mendalam');
+        }, 800);
+        return;
+    }
+    
+    /* Build prompt for AI */
+    var options = [];
+    if (optBug) options.push('BUGS/ERRORS');
+    if (optPerf) options.push('PERFORMANCE');
+    if (optSec) options.push('SECURITY');
+    if (optStyle) options.push('BEST PRACTICES');
+    
+    var prompt = 'Review code ' + language.toUpperCase() + ' berikut secara profesional.\n\n' +
+        'Fokus pada: ' + options.join(', ') + '\n\n' +
+        '```' + language + '\n' + code + '\n```\n\n' +
+        'Jawab dengan JSON VALID (jangan ada teks di luar JSON):\n' +
+        '{\n' +
+        '  "score": 85,\n' +
+        '  "grade": "A",\n' +
+        '  "summary": "ringkasan 1-2 kalimat tentang code ini",\n' +
+        '  "bugs": [{"line": 3, "severity": "critical", "title": "SQL Injection", "desc": "deskripsi masalahnya", "fix": "cara fix-nya"}],\n' +
+        '  "performance": [{"line": 5, "severity": "warning", "title": "Loop tidak efisien", "desc": "deskripsi", "fix": "saran"}],\n' +
+        '  "security": [{"line": 2, "severity": "critical", "title": "Hardcoded password", "desc": "deskripsi", "fix": "saran"}],\n' +
+        '  "style": [{"line": 1, "severity": "info", "title": "Gunakan const/let", "desc": "deskripsi", "fix": "saran"}],\n' +
+        '  "fixedCode": "versi code yang udah diperbaiki lengkap"\n' +
+        '}\n\n' +
+        'Grade: A (90+), B (75-89), C (60-74), D (40-59), F (<40). Severity: critical/warning/info.';
+    
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: config.model || 'llama-3.1-8b-instant',
+            messages: [
+                { role: 'system', content: 'Kamu adalah senior code reviewer. Jawab HANYA dengan JSON valid tanpa teks pembuka/penutup. Jangan pakai markdown code block untuk JSON.' },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.3,
+            max_tokens: 3000,
+            response_format: { type: 'json_object' }
+        })
+    })
+    .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    })
+    .then(function(data) {
+        var content = data.choices[0].message.content;
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        var aiReview = JSON.parse(content);
+        /* Merge with local */
+        var merged = crMergeReview(localReview, aiReview);
+        crDisplayReview(merged, code, language, false);
+    })
+    .catch(function(err) {
+        console.error('[CodeReview] Error:', err);
+        crDisplayReview(localReview, code, language, true);
+        showToast('⚠️ AI gagal, pakai local review');
+    });
+}
+
+/* ═══ LOCAL REVIEW (fallback + always merge) ═══ */
+function crLocalReview(code, language) {
+    var lines = code.split('\n');
+    var bugs = [];
+    var perf = [];
+    var sec = [];
+    var style = [];
+    
+    var patterns = {
+        javascript: [
+            { regex: /eval\s*\(/i, type: 'sec', severity: 'critical', title: 'Penggunaan eval()', desc: 'eval() sangat berbahaya, bisa jadi celah XSS atau code injection.', fix: 'Hindari eval(). Pakai JSON.parse() atau fungsi spesifik.' },
+            { regex: /innerHTML\s*=/i, type: 'sec', severity: 'warning', title: 'Penggunaan innerHTML', desc: 'innerHTML bisa menyebabkan XSS kalau datanya dari user.', fix: 'Pakai textContent atau sanitize input dulu.' },
+            { regex: /\bvar\s+/i, type: 'style', severity: 'info', title: 'Pakai var', desc: 'var itu function-scoped, bisa bikin bug. Modern JS pakai const/let.', fix: 'Ganti var jadi const atau let.' },
+            { regex: /console\.log/i, type: 'style', severity: 'info', title: 'Console.log masih ada', desc: 'console.log sebaiknya dihapus di production.', fix: 'Hapus console.log sebelum deploy.' },
+            { regex: /==(?!=)/g, type: 'style', severity: 'warning', title: 'Pakai == bukan ===', desc: '== bisa bikin bug karena type coercion.', fix: 'Ganti == jadi ===.' },
+            { regex: /document\.write/i, type: 'sec', severity: 'critical', title: 'document.write', desc: 'document.write bahaya dan deprecated.', fix: 'Pakai DOM manipulation modern.' }
+        ],
+        python: [
+            { regex: /eval\s*\(/i, type: 'sec', severity: 'critical', title: 'Penggunaan eval()', desc: 'eval() berbahaya untuk input user.', fix: 'Hindari eval(). Pakai ast.literal_eval() atau parser.' },
+            { regex: /exec\s*\(/i, type: 'sec', severity: 'critical', title: 'Penggunaan exec()', desc: 'exec() bisa eksekusi code arbitrary.', fix: 'Hindari exec() untuk input user.' },
+            { regex: /f".*SELECT.*\{/i, type: 'sec', severity: 'critical', title: 'SQL Injection (f-string)', desc: 'Query SQL pakai f-string = SQL injection!', fix: 'Pakai parameterized query: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))' },
+            { regex: /print\s*\(/i, type: 'style', severity: 'info', title: 'Print statement', desc: 'Sebisa mungkin pakai logging di production.', fix: 'Pakai logging module.' }
+        ],
+        php: [
+            { regex: /\$_(GET|POST|REQUEST|COOKIE)\[/i, type: 'sec', severity: 'critical', title: 'Input user tanpa sanitasi', desc: 'Mengakses $_GET/$_POST langsung sangat berbahaya.', fix: 'Pakai filter_input() atau htmlspecialchars().' },
+            { regex: /mysqli_query.*\$/i, type: 'sec', severity: 'critical', title: 'Kemungkinan SQL Injection', desc: 'Query SQL yang di-concat dengan variable = SQL injection.', fix: 'Pakai prepared statement (mysqli_prepare atau PDO).' },
+            { regex: /echo\s+.*\$/i, type: 'sec', severity: 'warning', title: 'Echo data user', desc: 'Echo data user tanpa escape bisa XSS.', fix: 'Pakai htmlspecialchars() sebelum echo.' }
+        ]
+    };
+    
+    var langPatterns = patterns[language] || patterns.javascript;
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        for (var j = 0; j < langPatterns.length; j++) {
+            var p = langPatterns[j];
+            if (p.regex.test(line)) {
+                var issue = { line: i + 1, severity: p.severity, title: p.title, desc: p.desc, fix: p.fix };
+                if (p.type === 'bug') bugs.push(issue);
+                else if (p.type === 'perf') perf.push(issue);
+                else if (p.type === 'sec') sec.push(issue);
+                else style.push(issue);
+            }
+        }
+    }
+    
+    /* Calculate score */
+    var score = 100;
+    score -= bugs.filter(function(b) { return b.severity === 'critical'; }).length * 15;
+    score -= bugs.filter(function(b) { return b.severity === 'warning'; }).length * 5;
+    score -= sec.filter(function(s) { return s.severity === 'critical'; }).length * 20;
+    score -= sec.filter(function(s) { return s.severity === 'warning'; }).length * 10;
+    score -= perf.length * 3;
+    score -= style.length * 2;
+    score = Math.max(0, Math.min(100, score));
+    
+    return {
+        score: score,
+        grade: score >= 90 ? 'A' : (score >= 75 ? 'B' : (score >= 60 ? 'C' : (score >= 40 ? 'D' : 'F'))),
+        summary: 'Analisis lokal ' + lines.length + ' baris code ' + language,
+        bugs: bugs,
+        performance: perf,
+        security: sec,
+        style: style,
+        fixedCode: ''
+    };
+}
+
+function crMergeReview(local, ai) {
+    return {
+        score: ai.score || local.score,
+        grade: ai.grade || local.grade,
+        summary: ai.summary || local.summary,
+        bugs: (ai.bugs || []).concat(local.bugs || []),
+        performance: (ai.performance || []).concat(local.performance || []),
+        security: (ai.security || []).concat(local.security || []),
+        style: (ai.style || []).concat(local.style || []),
+        fixedCode: ai.fixedCode || local.fixedCode || ''
+    };
+}
+
+/* ═══ DISPLAY ═══ */
+function crDisplayReview(review, originalCode, language, isLocal) {
+    var result = document.getElementById('crResult');
+    result.style.display = 'block';
+    
+    var html = '';
+    
+    /* Score card */
+    html += '<div class="cr-score-card">';
+    html += '<div class="cr-score-label">CODE SCORE</div>';
+    html += '<div class="cr-score-value">' + review.score + '</div>';
+    html += '<div class="cr-score-grade">' + (review.score >= 90 ? '🏆 Grade A — Excellent!' : (review.score >= 75 ? '👍 Grade B — Good' : (review.score >= 60 ? '😐 Grade C — Fair' : (review.score >= 40 ? '⚠️ Grade D — Needs Work' : '🚨 Grade F — Critical')))) + '</div>';
+    html += '<div class="cr-score-desc">' + escapeHtml(review.summary || '') + '</div>';
+    html += '</div>';
+    
+    /* Metrics */
+    html += '<div class="cr-metrics-grid">';
+    html += '<div class="cr-metric"><div class="cr-metric-val">' + review.bugs.length + '</div><div class="cr-metric-label">🐛 Bug</div></div>';
+    html += '<div class="cr-metric"><div class="cr-metric-val">' + review.performance.length + '</div><div class="cr-metric-label">⚡ Perf</div></div>';
+    html += '<div class="cr-metric"><div class="cr-metric-val">' + review.security.length + '</div><div class="cr-metric-label">🔒 Security</div></div>';
+    html += '</div>';
+    
+    /* Sections */
+    if (review.bugs && review.bugs.length > 0) html += crRenderSection('🐛 Bug & Error', review.bugs, 'critical');
+    if (review.security && review.security.length > 0) html += crRenderSection('🔒 Security Issues', review.security, 'critical');
+    if (review.performance && review.performance.length > 0) html += crRenderSection('⚡ Performance', review.performance, 'warning');
+    if (review.style && review.style.length > 0) html += crRenderSection('✨ Best Practices', review.style, 'info');
+    
+    if (review.bugs.length === 0 && review.security.length === 0 && review.performance.length === 0 && review.style.length === 0) {
+        html += '<div class="cr-section"><div class="cr-issue success"><div class="cr-issue-icon">✅</div><div class="cr-issue-body"><div class="cr-issue-title">Code Lu Bersih!</div><div class="cr-issue-desc">Gak ada masalah yang terdeteksi. Keep coding! 🚀</div></div></div></div>';
+    }
+    
+    /* Fixed code */
+    if (review.fixedCode && review.fixedCode.trim()) {
+        html += '<div class="cr-section">';
+        html += '<div class="cr-section-header">✨ Versi yang Diperbaiki</div>';
+        html += '<div class="cr-code-block">';
+        html += '<div class="cr-code-header"><span>' + language.toUpperCase() + ' · FIXED</span><button class="cr-code-copy" onclick="crCopyFixed(this)">📋 COPY</button></div>';
+        html += '<code>' + escapeHtml(review.fixedCode) + '</code>';
+        html += '</div></div>';
+    }
+    
+    /* Export */
+    html += '<button class="cr-tool-btn" style="width: 100%; margin-top: 16px; padding: 12px;" onclick="crExportReport()">📥 Export Report (.md)</button>';
+    
+    if (isLocal) {
+        html += '<div style="text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 12px;">💡 Local review — isi API key di DEV untuk AI review mendalam</div>';
+    }
+    
+    result.innerHTML = html;
+    crLastReview = review;
+    crLastLanguage = language;
+}
+
+var crLastReview = null;
+var crLastLanguage = '';
+
+function crRenderSection(title, issues, defaultSeverity) {
+    if (!issues || issues.length === 0) return '';
+    
+    var criticalCount = issues.filter(function(i) { return i.severity === 'critical'; }).length;
+    var warningCount = issues.filter(function(i) { return i.severity === 'warning'; }).length;
+    
+    var countClass = criticalCount > 0 ? 'critical' : (warningCount > 0 ? 'warning' : 'info');
+    
+    var html = '<div class="cr-section">';
+    html += '<div class="cr-section-header">' + title + '<span class="cr-count ' + countClass + '">' + issues.length + '</span></div>';
+    
+    for (var i = 0; i < issues.length; i++) {
+        var issue = issues[i];
+        var sev = issue.severity || defaultSeverity;
+        var icon = sev === 'critical' ? '🚨' : (sev === 'warning' ? '⚠️' : 'ℹ️');
+        
+        html += '<div class="cr-issue ' + sev + '">';
+        html += '<div class="cr-issue-icon">' + icon + '</div>';
+        html += '<div class="cr-issue-body">';
+        if (issue.line) html += '<span class="cr-issue-line">Line ' + issue.line + '</span>';
+        html += '<div class="cr-issue-title">' + escapeHtml(issue.title || 'Issue') + '</div>';
+        if (issue.desc) html += '<div class="cr-issue-desc">' + escapeHtml(issue.desc) + '</div>';
+        if (issue.fix) html += '<div class="cr-issue-fix"><strong>💡 Fix:</strong> ' + escapeHtml(issue.fix) + '</div>';
+        html += '</div></div>';
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+function crCopyFixed(btn) {
+    var code = btn.closest('.cr-code-block').querySelector('code').textContent;
+    copyToClipboard(code, 'Fixed code disalin!');
+}
+
+function crExportReport() {
+    if (!crLastReview) { showToast('⚠️ Review code dulu'); return; }
+    
+    var r = crLastReview;
+    var text = '# 🔍 Code Review Report\n\n';
+    text += '**Tanggal**: ' + new Date().toLocaleString('id-ID') + '\n';
+    text += '**Bahasa**: ' + crLastLanguage.toUpperCase() + '\n';
+    text += '**Score**: ' + r.score + '/100 (' + r.grade + ')\n\n';
+    text += '---\n\n';
+    text += '## 📋 Summary\n\n' + (r.summary || '') + '\n\n';
+    
+    if (r.bugs && r.bugs.length) {
+        text += '## 🐛 Bugs & Errors (' + r.bugs.length + ')\n\n';
+        r.bugs.forEach(function(b) {
+            text += '### ' + (b.severity === 'critical' ? '🚨' : '⚠️') + ' ' + b.title + '\n';
+            if (b.line) text += '**Line**: ' + b.line + '\n\n';
+            text += b.desc + '\n\n';
+            if (b.fix) text += '**Fix**: ' + b.fix + '\n\n';
+        });
+    }
+    
+    if (r.security && r.security.length) {
+        text += '## 🔒 Security (' + r.security.length + ')\n\n';
+        r.security.forEach(function(s) {
+            text += '### ' + s.title + '\n';
+            if (s.line) text += '**Line**: ' + s.line + '\n\n';
+            text += s.desc + '\n\n';
+            if (s.fix) text += '**Fix**: ' + s.fix + '\n\n';
+        });
+    }
+    
+    if (r.performance && r.performance.length) {
+        text += '## ⚡ Performance (' + r.performance.length + ')\n\n';
+        r.performance.forEach(function(p) {
+            text += '- **' + p.title + '**' + (p.line ? ' (Line ' + p.line + ')' : '') + ': ' + p.desc + '\n';
+        });
+        text += '\n';
+    }
+    
+    if (r.style && r.style.length) {
+        text += '## ✨ Best Practices (' + r.style.length + ')\n\n';
+        r.style.forEach(function(s) {
+            text += '- **' + s.title + '**' + (s.line ? ' (Line ' + s.line + ')' : '') + ': ' + s.desc + '\n';
+        });
+        text += '\n';
+    }
+    
+    if (r.fixedCode) {
+        text += '## ✨ Fixed Code\n\n```' + crLastLanguage + '\n' + r.fixedCode + '\n```\n\n';
+    }
+    
+    text += '---\n\n*Generated by CLOSIWER AI Code Reviewer by PANN*\n';
+    
+    var blob = new Blob([text], { type: 'text/markdown' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'code-review-' + Date.now() + '.md';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📥 Report di-download!');
+}
+
+/* ═══ QUICK ACCESS ═══ */
+function openCodeReviewer() {
+    var modal = document.getElementById('codeReviewerModal');
+    if (modal) {
+        modal.classList.add('show');
+        setTimeout(crUpdateLineNumbers, 100);
+    }
+}
+
+console.log('💻 FITUR v5.1: Code Reviewer loaded!');
