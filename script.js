@@ -1192,3 +1192,541 @@ function setupKeyboardShortcuts() {
 }
 
 console.log('CLOSIWER AI v5.0 by PANN ready! ✅');
+
+/* ═══════════════════════════════════════
+   FITUR #1: COLOR PALETTE GENERATOR
+═══════════════════════════════════════ */
+
+var cpCurrentPalette = [];
+
+function cpSetTab(tab, el) {
+    document.querySelectorAll('.cp-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.cp-content').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    var content = document.querySelector('.cp-content[data-tab="' + tab + '"]');
+    if (content) content.classList.add('active');
+}
+
+/* Color conversion helpers */
+function cpHexToRgb(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(function(c) { return c + c; }).join('');
+    var r = parseInt(hex.substring(0, 2), 16);
+    var g = parseInt(hex.substring(2, 4), 16);
+    var b = parseInt(hex.substring(4, 6), 16);
+    return { r: r, g: g, b: b };
+}
+
+function cpRgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(function(x) {
+        var h = Math.max(0, Math.min(255, Math.round(x))).toString(16);
+        return h.length === 1 ? '0' + h : h;
+    }).join('');
+}
+
+function cpRgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+        var d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function cpHslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    var c = (1 - Math.abs(2 * l - 1)) * s;
+    var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    var m = l - c / 2;
+    var r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    return cpRgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
+}
+
+function cpRelativeLuminance(hex) {
+    var rgb = cpHexToRgb(hex);
+    var a = [rgb.r, rgb.g, rgb.b].map(function(v) {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+}
+
+function cpContrastRatio(hex1, hex2) {
+    var l1 = cpRelativeLuminance(hex1);
+    var l2 = cpRelativeLuminance(hex2);
+    var lighter = Math.max(l1, l2);
+    var darker = Math.min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
+}
+
+/* Palette generators */
+function cpGenerateMonochromatic(baseHex) {
+    var hsl = cpRgbToHsl(cpHexToRgb(baseHex).r, cpHexToRgb(baseHex).g, cpHexToRgb(baseHex).b);
+    return [
+        cpHslToHex(hsl.h, hsl.s, 20),
+        cpHslToHex(hsl.h, hsl.s, 40),
+        cpHslToHex(hsl.h, hsl.s, 60),
+        cpHslToHex(hsl.h, hsl.s, 80),
+        cpHslToHex(hsl.h, hsl.s, 95)
+    ];
+}
+
+function cpGenerateComplementary(baseHex) {
+    var rgb = cpHexToRgb(baseHex);
+    var hsl = cpRgbToHsl(rgb.r, rgb.g, rgb.b);
+    return [
+        baseHex,
+        cpHslToHex((hsl.h + 180) % 360, hsl.s, hsl.l),
+        cpHslToHex(hsl.h, hsl.s, Math.min(100, hsl.l + 20)),
+        cpHslToHex((hsl.h + 180) % 360, hsl.s, Math.min(100, hsl.l + 20)),
+        cpHslToHex(hsl.h, hsl.s, Math.max(0, hsl.l - 20))
+    ];
+}
+
+function cpGenerateTriadic(baseHex) {
+    var rgb = cpHexToRgb(baseHex);
+    var hsl = cpRgbToHsl(rgb.r, rgb.g, rgb.b);
+    return [
+        baseHex,
+        cpHslToHex((hsl.h + 120) % 360, hsl.s, hsl.l),
+        cpHslToHex((hsl.h + 240) % 360, hsl.s, hsl.l),
+        cpHslToHex(hsl.h, hsl.s, Math.min(100, hsl.l + 25)),
+        cpHslToHex((hsl.h + 120) % 360, hsl.s, Math.min(100, hsl.l + 25))
+    ];
+}
+
+function cpGenerateAnalogous(baseHex) {
+    var rgb = cpHexToRgb(baseHex);
+    var hsl = cpRgbToHsl(rgb.r, rgb.g, rgb.b);
+    return [
+        cpHslToHex((hsl.h - 40 + 360) % 360, hsl.s, hsl.l),
+        cpHslToHex((hsl.h - 20 + 360) % 360, hsl.s, hsl.l),
+        baseHex,
+        cpHslToHex((hsl.h + 20) % 360, hsl.s, hsl.l),
+        cpHslToHex((hsl.h + 40) % 360, hsl.s, hsl.l)
+    ];
+}
+
+function cpGenerateTetradic(baseHex) {
+    var rgb = cpHexToRgb(baseHex);
+    var hsl = cpRgbToHsl(rgb.r, rgb.g, rgb.b);
+    return [
+        baseHex,
+        cpHslToHex((hsl.h + 90) % 360, hsl.s, hsl.l),
+        cpHslToHex((hsl.h + 180) % 360, hsl.s, hsl.l),
+        cpHslToHex((hsl.h + 270) % 360, hsl.s, hsl.l),
+        cpHslToHex(hsl.h, hsl.s, Math.min(100, hsl.l + 25))
+    ];
+}
+
+function cpGenerateRandom(baseHex) {
+    var rgb = cpHexToRgb(baseHex);
+    var hsl = cpRgbToHsl(rgb.r, rgb.g, rgb.b);
+    var colors = [baseHex];
+    for (var i = 0; i < 4; i++) {
+        colors.push(cpHslToHex(Math.floor(Math.random() * 360), 40 + Math.random() * 50, 30 + Math.random() * 50));
+    }
+    return colors;
+}
+
+function cpShowPalette(colors, source) {
+    cpCurrentPalette = colors;
+    document.getElementById('cpResult').style.display = 'block';
+    var html = '';
+    for (var i = 0; i < colors.length; i++) {
+        var hex = colors[i];
+        var rgb = cpHexToRgb(hex);
+        var hsl = cpRgbToHsl(rgb.r, rgb.g, rgb.b);
+        var textColor = cpRelativeLuminance(hex) > 0.5 ? '#000' : '#fff';
+        html += '<div class="cp-color" style="background: ' + hex + ';" onclick="cpCopyColor(\'' + hex + '\')">';
+        html += '<div class="cp-color-info" style="color: ' + textColor + ';">';
+        html += '<div>' + hex.toUpperCase() + '</div>';
+        html += '<div style="opacity: 0.8;">RGB(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')</div>';
+        html += '<div style="opacity: 0.8;">HSL(' + hsl.h + ',' + hsl.s + '%,' + hsl.l + '%)</div>';
+        html += '</div></div>';
+    }
+    document.getElementById('cpPalette').innerHTML = html;
+
+    /* Contrast checker */
+    var contrastHtml = '';
+    for (var i = 0; i < colors.length; i++) {
+        var cRatio = cpContrastRatio(colors[i], '#ffffff');
+        var cRatioDark = cpContrastRatio(colors[i], '#000000');
+        var best = cRatio > cRatioDark ? cRatio : cRatioDark;
+        var bgLabel = cRatio > cRatioDark ? 'putih' : 'hitam';
+        var badge = best >= 7 ? 'aaa' : (best >= 4.5 ? 'aa' : 'fail');
+        var badgeText = best >= 7 ? 'AAA ✓' : (best >= 4.5 ? 'AA ✓' : 'FAIL ✗');
+        contrastHtml += '<div class="cp-contrast-row">';
+        contrastHtml += '<div style="width: 24px; height: 24px; border-radius: 6px; background: ' + colors[i] + '; border: 1px solid var(--border);"></div>';
+        contrastHtml += '<span style="flex: 1; font-family: monospace;">' + colors[i].toUpperCase() + '</span>';
+        contrastHtml += '<span style="font-size: 10px; color: var(--text-muted);">vs ' + bgLabel + ': ' + best.toFixed(2) + ':1</span>';
+        contrastHtml += '<span class="cp-contrast-badge ' + badge + '">' + badgeText + '</span>';
+        contrastHtml += '</div>';
+    }
+    document.getElementById('cpContrastResults').innerHTML = contrastHtml;
+
+    showToast('🎨 Palette dari: ' + source);
+    closeModal('colorPaletteModal');
+}
+
+function cpFromText() {
+    var text = document.getElementById('cpTextInput').value.trim();
+    if (!text) { showToast('⚠️ Isi deskripsi dulu'); return; }
+    /* Simple keyword mapping - bisa upgrade pakai AI nanti */
+    var keywordMap = {
+        sunset: ['#ff6b35', '#f7931e', '#ffd23f', '#c73e1d', '#3d1e1e'],
+        ocean: ['#0077b6', '#00b4d8', '#90e0ef', '#caf0f8', '#03045e'],
+        forest: ['#2d6a4f', '#40916c', '#74c69d', '#b7e4c7', '#d8f3dc'],
+        cyberpunk: ['#ff006e', '#8338ec', '#3a86ff', '#fb5607', '#ffbe0b'],
+        pastel: ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff'],
+        neon: ['#ff073a', '#00ff88', '#00d4ff', '#ff00ff', '#ffff00'],
+        coffee: ['#3e2723', '#5d4037', '#8d6e63', '#bcaaa4', '#d7ccc8'],
+        sakura: ['#ffb7c5', '#ffc9d4', '#ffdae0', '#ffe8ec', '#fff0f3'],
+        dark: ['#0a0a0f', '#1a1a24', '#2a2a38', '#3a3a4a', '#4a4a5a'],
+        gradien: ['#ff8c5a', '#a855f7', '#6366f1', '#0ea5e9', '#10b981'],
+        malam: ['#0f172a', '#1e293b', '#334155', '#64748b', '#94a3b8'],
+        pagi: ['#fef3c7', '#fde68a', '#fbbf24', '#f59e0b', '#d97706'],
+        bali: ['#f59e0b', '#dc2626', '#7c2d12', '#0891b2', '#0e7490'],
+        gunung: ['#1e3a8a', '#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe'],
+        api: ['#7f1d1d', '#dc2626', '#f59e0b', '#fbbf24', '#fef3c7'],
+        es: ['#0c4a6e', '#0ea5e9', '#38bdf8', '#7dd3fc', '#e0f2fe']
+    };
+    var lowerText = text.toLowerCase();
+    for (var keyword in keywordMap) {
+        if (lowerText.indexOf(keyword) !== -1) {
+            cpShowPalette(keywordMap[keyword], '"' + keyword + '"');
+            return;
+        }
+    }
+    /* Fallback: hash text jadi warna */
+    var hash = 0;
+    for (var i = 0; i < text.length; i++) hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    var h = Math.abs(hash) % 360;
+    var generated = [];
+    for (var i = 0; i < 5; i++) {
+        generated.push(cpHslToHex((h + i * 25) % 360, 60 + Math.random() * 20, 30 + i * 12));
+    }
+    cpShowPalette(generated, '"' + text + '"');
+}
+
+function cpFromImage(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+            var previewWrap = document.getElementById('cpImagePreview');
+            previewWrap.innerHTML = '<img src="' + ev.target.result + '" alt="preview">';
+            
+            /* Extract colors via canvas */
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width = 100;
+            var h = canvas.height = 100 * (img.height / img.width);
+            ctx.drawImage(img, 0, 0, w, h);
+            var imageData = ctx.getImageData(0, 0, w, h).data;
+            
+            /* Quantize colors */
+            var colorBuckets = {};
+            for (var i = 0; i < imageData.length; i += 16) {
+                var r = Math.round(imageData[i] / 32) * 32;
+                var g = Math.round(imageData[i + 1] / 32) * 32;
+                var b = Math.round(imageData[i + 2] / 32) * 32;
+                var key = r + ',' + g + ',' + b;
+                colorBuckets[key] = (colorBuckets[key] || 0) + 1;
+            }
+            
+            var sortedColors = Object.keys(colorBuckets).sort(function(a, b) {
+                return colorBuckets[b] - colorBuckets[a];
+            }).slice(0, 5);
+            
+            var palette = sortedColors.map(function(key) {
+                var parts = key.split(',');
+                return cpRgbToHex(parseInt(parts[0]), parseInt(parts[1]), parseInt(parts[2]));
+            });
+            
+            while (palette.length < 5) palette.push(cpRgbToHex(100, 100, 100));
+            
+            cpShowPalette(palette, 'Gambar: ' + file.name);
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function cpFromBase() {
+    var base = document.getElementById('cpBaseColor').value;
+    var harmony = document.getElementById('cpHarmony').value;
+    var palette;
+    switch (harmony) {
+        case 'monochromatic': palette = cpGenerateMonochromatic(base); break;
+        case 'complementary': palette = cpGenerateComplementary(base); break;
+        case 'triadic': palette = cpGenerateTriadic(base); break;
+        case 'analogous': palette = cpGenerateAnalogous(base); break;
+        case 'tetradic': palette = cpGenerateTetradic(base); break;
+        case 'random': palette = cpGenerateRandom(base); break;
+        default: palette = cpGenerateComplementary(base);
+    }
+    cpShowPalette(palette, 'Base: ' + base);
+}
+
+function cpCopyColor(hex) {
+    copyToClipboard(hex, 'Warna ' + hex + ' disalin!');
+}
+
+function cpCopyAll() {
+    var text = cpCurrentPalette.map(function(c, i) { return 'Color ' + (i + 1) + ': ' + c; }).join('\n');
+    copyToClipboard(text, 'Semua warna disalin!');
+}
+
+function cpExport(format) {
+    if (cpCurrentPalette.length === 0) { showToast('⚠️ Generate palette dulu'); return; }
+    var content = '';
+    var filename = '';
+    var mime = 'text/plain';
+    
+    switch (format) {
+        case 'css':
+            content = ':root {\n';
+            cpCurrentPalette.forEach(function(c, i) { content += '  --color-' + (i + 1) + ': ' + c + ';\n'; });
+            content += '}';
+            filename = 'palette.css';
+            mime = 'text/css';
+            break;
+        case 'tailwind':
+            content = 'module.exports = {\n  theme: {\n    extend: {\n      colors: {\n';
+            cpCurrentPalette.forEach(function(c, i) { content += '        custom' + (i + 1) + ": '" + c + "',\n"; });
+            content += '      }\n    }\n  }\n}';
+            filename = 'tailwind.config.js';
+            mime = 'text/javascript';
+            break;
+        case 'json':
+            content = JSON.stringify({ palette: cpCurrentPalette, generated: new Date().toISOString() }, null, 2);
+            filename = 'palette.json';
+            mime = 'application/json';
+            break;
+        case 'svg':
+            content = '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="100" viewBox="0 0 500 100">\n';
+            cpCurrentPalette.forEach(function(c, i) {
+                content += '  <rect x="' + (i * 100) + '" y="0" width="100" height="100" fill="' + c + '"/>\n';
+            });
+            content += '</svg>';
+            filename = 'palette.svg';
+            mime = 'image/svg+xml';
+            break;
+    }
+    
+    var blob = new Blob([content], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📥 ' + filename + ' didownload!');
+}
+
+/* ═══════════════════════════════════════
+   FITUR #2: AVATAR GENERATOR
+═══════════════════════════════════════ */
+
+var avatarGallery = JSON.parse(localStorage.getItem('closiwer_avatars') || '[]');
+
+function generateAvatars() {
+    var desc = document.getElementById('avatarDesc').value.trim();
+    if (!desc) { showToast('⚠️ Isi deskripsi dulu'); return; }
+    
+    var style = document.getElementById('avatarStyle').value;
+    var count = parseInt(document.getElementById('avatarCount').value);
+    var size = document.getElementById('avatarSize').value;
+    
+    var styleMap = {
+        anime: 'anime style, high quality, detailed, vibrant colors',
+        realistic: 'realistic photo, professional portrait, detailed',
+        pixel: 'pixel art, 8-bit style, retro game aesthetic',
+        '3d': '3D render, octane render, cinematic lighting, detailed',
+        cartoon: 'cartoon style, flat design, colorful, cute',
+        cyberpunk: 'cyberpunk style, neon lights, futuristic, high tech',
+        fantasy: 'fantasy art, magical, ethereal, detailed illustration',
+        chibi: 'chibi style, cute, kawaii, small body, big head'
+    };
+    
+    var galleryWrap = document.getElementById('avGalleryWrap');
+    var gallery = document.getElementById('avGallery');
+    galleryWrap.style.display = 'block';
+    
+    /* Show loading for new batch */
+    var loadingHtml = '<div class="av-loading" id="avLoading"><div class="av-spinner"></div><div style="font-size: 12px; color: var(--text-muted);">Generating ' + count + ' avatars...</div></div>';
+    gallery.innerHTML = loadingHtml + gallery.innerHTML;
+    
+    var completed = 0;
+    var newAvatars = [];
+    
+    for (var i = 0; i < count; i++) {
+        (function(idx) {
+            var seed = Math.floor(Math.random() * 1000000);
+            var prompt = desc + ', ' + styleMap[style] + ', avatar, profile picture';
+            var url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=' + size + '&height=' + size + '&seed=' + seed + '&nologo=true&model=flux&enhance=true&private=true';
+            
+            /* Preload image */
+            var img = new Image();
+            img.onload = function() {
+                completed++;
+                newAvatars.push({ url: url, prompt: desc, style: style, timestamp: Date.now() });
+                avatarGallery.unshift({ url: url, prompt: desc, style: style, timestamp: Date.now() });
+                avatarGallery = avatarGallery.slice(0, 50);
+                localStorage.setItem('closiwer_avatars', JSON.stringify(avatarGallery));
+                
+                /* Add to gallery */
+                var loading = document.getElementById('avLoading');
+                if (loading && completed === 1) loading.remove();
+                
+                var itemHtml = '<div class="av-item" data-url="' + url + '">' +
+                    '<img src="' + url + '" alt="avatar" onclick="avOpenFull(\'' + url + '\')">' +
+                    '<div class="av-item-actions">' +
+                    '<button class="av-action-btn" onclick="event.stopPropagation(); avDownload(\'' + url + '\')">📥</button>' +
+                    '<button class="av-action-btn" onclick="event.stopPropagation(); avSetProfile(\'' + url + '\')">👤</button>' +
+                    '<button class="av-action-btn" onclick="event.stopPropagation(); avCopyUrl(\'' + url + '\')">📋</button>' +
+                    '</div></div>';
+                
+                var loadingEl = document.getElementById('avLoading');
+                if (loadingEl) loadingEl.insertAdjacentHTML('afterend', itemHtml);
+                else gallery.insertAdjacentHTML('afterbegin', itemHtml);
+                
+                if (completed === count) {
+                    var l = document.getElementById('avLoading');
+                    if (l) l.remove();
+                    showToast('✅ ' + count + ' avatar berhasil dibuat!');
+                }
+            };
+            img.onerror = function() {
+                completed++;
+                showToast('⚠️ Gagal load avatar #' + (idx + 1));
+                if (completed === count) {
+                    var l = document.getElementById('avLoading');
+                    if (l) l.remove();
+                }
+            };
+            img.src = url;
+        })(i);
+    }
+}
+
+function loadAvatarGallery() {
+    if (avatarGallery.length === 0) return;
+    document.getElementById('avGalleryWrap').style.display = 'block';
+    var html = '';
+    for (var i = 0; i < avatarGallery.length; i++) {
+        var av = avatarGallery[i];
+        html += '<div class="av-item">' +
+            '<img src="' + av.url + '" alt="avatar" onclick="avOpenFull(\'' + av.url + '\')">' +
+            '<div class="av-item-actions">' +
+            '<button class="av-action-btn" onclick="event.stopPropagation(); avDownload(\'' + av.url + '\')">📥</button>' +
+            '<button class="av-action-btn" onclick="event.stopPropagation(); avSetProfile(\'' + av.url + '\')">👤</button>' +
+            '<button class="av-action-btn" onclick="event.stopPropagation(); avCopyUrl(\'' + av.url + '\')">📋</button>' +
+            '</div></div>';
+    }
+    document.getElementById('avGallery').innerHTML = html;
+}
+
+function avOpenFull(url) {
+    window.open(url, '_blank');
+}
+
+function avDownload(url) {
+    fetch(url).then(function(r) { return r.blob(); }).then(function(blob) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'closiwer-avatar-' + Date.now() + '.png';
+        a.click();
+        showToast('📥 Download dimulai');
+    }).catch(function() {
+        window.open(url, '_blank');
+        showToast('💡 Tap & hold untuk save');
+    });
+}
+
+function avSetProfile(url) {
+    localStorage.setItem('closiwer_profile_pic', url);
+    showToast('👤 Avatar diset sebagai profile!');
+    /* Update header avatar if exist */
+    var profileEls = document.querySelectorAll('[data-profile-pic]');
+    profileEls.forEach(function(el) {
+        el.style.backgroundImage = 'url(' + url + ')';
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+    });
+}
+
+function avCopyUrl(url) {
+    copyToClipboard(url, 'URL avatar disalin!');
+}
+
+function clearAvGallery() {
+    if (!confirm('Hapus semua avatar di gallery?')) return;
+    avatarGallery = [];
+    localStorage.removeItem('closiwer_avatars');
+    document.getElementById('avGallery').innerHTML = '';
+    document.getElementById('avGalleryWrap').style.display = 'none';
+    showToast('🗑️ Gallery dihapus');
+}
+
+/* Auto-load gallery saat modal dibuka */
+var originalOpenCommandPalette = openCommandPalette;
+function extendAvatarLoad() {
+    /* Hook saat command palette ada - safe way */
+}
+
+/* ═══════════════════════════════════════
+   REGISTER COMMANDS UNTUK COMMAND PALETTE
+═══════════════════════════════════════ */
+setTimeout(function() {
+    if (typeof commands !== 'undefined' && Array.isArray(commands)) {
+        commands.push({
+            icon: '🎨',
+            label: 'Color Palette Generator',
+            action: function() { document.getElementById('colorPaletteModal').classList.add('show'); }
+        });
+        commands.push({
+            icon: '👤',
+            label: 'Avatar Generator',
+            action: function() {
+                document.getElementById('avatarModal').classList.add('show');
+                loadAvatarGallery();
+            }
+        });
+    }
+}, 500);
+
+/* Load gallery saat modal avatar dibuka */
+document.addEventListener('DOMContentLoaded', function() {
+    var avatarModal = document.getElementById('avatarModal');
+    if (avatarModal) {
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(m) {
+                if (m.attributeName === 'class' && avatarModal.classList.contains('show')) {
+                    loadAvatarGallery();
+                }
+            });
+        });
+        observer.observe(avatarModal, { attributes: true });
+    }
+});
+
+console.log('🎨 FITUR v5.1: Color Palette + Avatar Generator loaded!');
