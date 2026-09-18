@@ -1730,3 +1730,24 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('🎨 FITUR v5.1: Color Palette + Avatar Generator loaded!');
+
+
+/* ═══ QUICK ACCESS FUNCTIONS ═══ */
+function openColorPalette() {
+    var modal = document.getElementById('colorPaletteModal');
+    if (modal) {
+        modal.classList.add('show');
+    } else {
+        alert('❌ Color Palette modal tidak ditemukan. Cek index.html');
+    }
+}
+
+function openAvatarGen() {
+    var modal = document.getElementById('avatarModal');
+    if (modal) {
+        modal.classList.add('show');
+        if (typeof loadAvatarGallery === 'function') loadAvatarGallery();
+    } else {
+        alert('❌ Avatar modal tidak ditemukan. Cek index.html');
+    }
+}
