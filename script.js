@@ -4745,3 +4745,392 @@ function openWebsiteBuilder() {
 }
 
 console.log('🌐 FITUR v5.1: Website Builder loaded!');
+/* ═══════════════════════════════════════
+   CINEMATIC LOADER v3.0 - Full Script
+═══════════════════════════════════════ */
+
+var loaderState = {
+    running: false,
+    done: false,
+    progress: 0,
+    animationId: null
+};
+
+/* ═══ LOG MESSAGES ═══ */
+var loaderLogMessages = [
+    { ok: true, text: 'Initializing CLOSIWER core engine...' },
+    { ok: true, text: 'Loading neural networks...' },
+    { ok: true, text: 'Mounting AI modules (v5.1)...' },
+    { ok: true, text: 'Connecting to Groq API...' },
+    { ok: true, text: 'Loading Color Palette Engine...' },
+    { ok: true, text: 'Calibrating Avatar Generator...' },
+    { ok: true, text: 'Warming Recipe Engine...' },
+    { ok: true, text: 'Initializing Finance Tracker...' },
+    { ok: true, text: 'Loading Code Reviewer AI...' },
+    { ok: true, text: 'Syncing Study Buddy database...' },
+    { ok: true, text: 'Activating AI Agent Mode...' },
+    { ok: true, text: 'Launching Website Builder...' },
+    { ok: true, text: 'Optimizing performance...' },
+    { ok: true, text: 'All systems operational! ✨' }
+];
+
+/* ═══ TYPE TEXT ═══ */
+function typeTextCin(element, text, speed, callback) {
+    var i = 0;
+    element.innerHTML = '';
+    var cursor = '<span class="cursor-blink"></span>';
+    
+    function type() {
+        if (i < text.length) {
+            element.innerHTML = text.substring(0, i + 1) + cursor;
+            i++;
+            setTimeout(type, speed);
+        } else {
+            element.innerHTML = text + cursor;
+            if (callback) callback();
+        }
+    }
+    type();
+}
+
+/* ═══ PARTICLES ═══ */
+function initLoaderParticles() {
+    var canvas = document.getElementById('loaderCanvas');
+    if (!canvas) return;
+    
+    var ctx = canvas.getContext('2d');
+    var particles = [];
+    var W, H;
+    
+    function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    
+    var centerX = W / 2;
+    var centerY = H / 2;
+    
+    /* Burst particles */
+    for (var i = 0; i < 80; i++) {
+        var angle = (Math.PI * 2 * i) / 80 + Math.random() * 0.3;
+        var speed = 2 + Math.random() * 5;
+        particles.push({
+            x: centerX,
+            y: centerY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 1 + Math.random() * 3,
+            life: 1,
+            decay: 0.005 + Math.random() * 0.01,
+            color: Math.random() < 0.5 ? '#d97757' : (Math.random() < 0.5 ? '#38bdf8' : '#8b5cf6')
+        });
+    }
+    
+    /* Ambient particles */
+    for (var j = 0; j < 30; j++) {
+        particles.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            size: Math.random() * 2 + 0.5,
+            life: 1,
+            decay: 0,
+            ambient: true,
+            color: '#d97757'
+        });
+    }
+    
+    function animate() {
+        if (loaderState.done && particles.length < 5) return;
+        
+        ctx.clearRect(0, 0, W, H);
+        
+        for (var i = particles.length - 1; i >= 0; i--) {
+            var p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            
+            if (!p.ambient) {
+                p.vx *= 0.98;
+                p.vy *= 0.98;
+                p.life -= p.decay;
+            } else {
+                if (p.x < 0 || p.x > W) p.vx *= -1;
+                if (p.y < 0 || p.y > H) p.vy *= -1;
+            }
+            
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+                continue;
+            }
+            
+            var gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 6);
+            gradient.addColorStop(0, p.color);
+            gradient.addColorStop(0.5, p.color + '80');
+            gradient.addColorStop(1, p.color + '00');
+            
+            ctx.globalAlpha = p.life * 0.9;
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        ctx.globalAlpha = 1;
+        loaderState.animationId = requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+/* ═══ MORPH LOGO ═══ */
+function initMorphLogo() {
+    var morphPath = document.getElementById('morphPath');
+    var morphCircle = document.getElementById('morphCircle');
+    if (!morphPath) return;
+    
+    var shapes = [
+        'M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z',
+        'M50 15 L85 50 L50 85 L15 50 Z',
+        'M50 12 L80 30 L80 70 L50 88 L20 70 L20 30 Z',
+        'M50 15 L78 40 L78 60 L50 85 L22 60 L22 40 Z',
+        'M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z'
+    ];
+    
+    var gradients = ['url(#morphGrad1)', 'url(#morphGrad2)', 'url(#morphGrad3)', 'url(#morphGrad1)'];
+    
+    var shapeIndex = 0;
+    var gradIndex = 0;
+    
+    function morphNext() {
+        if (loaderState.done) return;
+        
+        shapeIndex = (shapeIndex + 1) % shapes.length;
+        gradIndex = (gradIndex + 1) % gradients.length;
+        
+        morphPath.setAttribute('d', shapes[shapeIndex]);
+        morphPath.setAttribute('stroke', gradients[gradIndex]);
+        
+        if (morphCircle) morphCircle.setAttribute('fill', gradients[gradIndex]);
+        
+        setTimeout(morphNext, 1200);
+    }
+    
+    setTimeout(morphNext, 1500);
+}
+
+/* ═══ TERMINAL ═══ */
+function startTerminalLog() {
+    var terminalBody = document.getElementById('terminalBody');
+    if (!terminalBody) return;
+    
+    var index = 0;
+    
+    function addLog() {
+        if (loaderState.done || index >= loaderLogMessages.length) return;
+        
+        var msg = loaderLogMessages[index];
+        var time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        var line = document.createElement('span');
+        line.className = 'log-line';
+        line.innerHTML = '<span class="log-time">' + time + '</span>' +
+                        '<span class="' + (msg.ok ? 'log-ok' : 'log-info') + '">' + (msg.ok ? '✓' : '●') + '</span>' +
+                        '<span class="log-text">' + msg.text + '</span>';
+        terminalBody.appendChild(line);
+        
+        while (terminalBody.children.length > 6) {
+            terminalBody.removeChild(terminalBody.firstChild);
+        }
+        
+        index++;
+        setTimeout(addLog, 350 + Math.random() * 200);
+    }
+    
+    setTimeout(addLog, 2000);
+}
+
+/* ═══ PROGRESS ═══ */
+function startProgress() {
+    var fill = document.getElementById('progressFill');
+    var pct = document.getElementById('progressPct');
+    var sparkles = document.getElementById('progressSparkles');
+    if (!fill) return;
+    
+    function update() {
+        if (loaderState.done) return;
+        
+        var increment;
+        if (loaderState.progress < 30) increment = 0.6;
+        else if (loaderState.progress < 60) increment = 0.45;
+        else if (loaderState.progress < 85) increment = 0.3;
+        else if (loaderState.progress < 95) increment = 0.2;
+        else increment = 0.1;
+        
+        loaderState.progress += increment;
+        
+        if (loaderState.progress >= 100) {
+            loaderState.progress = 100;
+            fill.style.width = '100%';
+            pct.textContent = '100%';
+            setTimeout(triggerFinale, 400);
+            return;
+        }
+        
+        fill.style.width = loaderState.progress + '%';
+        pct.textContent = Math.floor(loaderState.progress) + '%';
+        
+        var chipCount = Math.floor((loaderState.progress / 100) * 6);
+        var chips = document.querySelectorAll('.chip-cine');
+        chips.forEach(function(chip, i) {
+            if (i < chipCount) chip.classList.add('active');
+        });
+        
+        if (Math.random() < 0.3 && sparkles) {
+            var sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = loaderState.progress + '%';
+            sparkles.appendChild(sparkle);
+            setTimeout(function() {
+                if (sparkle.parentNode) sparkle.parentNode.removeChild(sparkle);
+            }, 1200);
+        }
+        
+        requestAnimationFrame(update);
+    }
+    
+    setTimeout(update, 1500);
+}
+
+/* ═══ FINALE ═══ */
+function triggerFinale() {
+    var loader = document.getElementById('closiwerLoader');
+    if (!loader) return;
+    
+    for (var i = 0; i < 5; i++) {
+        setTimeout(function() { createFireworkCin(loader); }, i * 150);
+    }
+    
+    setTimeout(function() {
+        loaderState.done = true;
+        if (loaderState.animationId) cancelAnimationFrame(loaderState.animationId);
+        hideLoader();
+    }, 1200);
+}
+
+function createFireworkCin(parent) {
+    var W = window.innerWidth;
+    var H = window.innerHeight;
+    var cx = W / 2 + (Math.random() - 0.5) * W * 0.6;
+    var cy = H / 2 + (Math.random() - 0.5) * H * 0.5;
+    
+    var colors = ['#ff8c5a', '#38bdf8', '#8b5cf6', '#ec4899', '#fbbf24', '#4ade80'];
+    
+    for (var i = 0; i < 20; i++) {
+        var particle = document.createElement('div');
+        particle.className = 'firework';
+        particle.style.left = cx + 'px';
+        particle.style.top = cy + 'px';
+        var color = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.background = color;
+        particle.style.boxShadow = '0 0 12px ' + color;
+        particle.style.setProperty('--angle', (Math.PI * 2 * i / 20) + 'rad');
+        particle.style.setProperty('--distance', (60 + Math.random() * 80) + 'px');
+        particle.style.animationDelay = (Math.random() * 0.2) + 's';
+        parent.appendChild(particle);
+        
+        (function(p) {
+            setTimeout(function() {
+                if (p.parentNode) p.parentNode.removeChild(p);
+            }, 2000);
+        })(particle);
+    }
+}
+
+/* ═══ START LOADER ═══ */
+function startCinematicLoader() {
+    if (loaderState.running) return;
+    loaderState.running = true;
+    
+    var loader = document.getElementById('closiwerLoader');
+    if (!loader) return;
+    
+    initLoaderParticles();
+    initMorphLogo();
+    
+    setTimeout(function() {
+        var brandText = document.getElementById('brandText');
+        if (brandText) {
+            typeTextCin(brandText, 'CLOSIWER', 100, function() {
+                var sub = document.getElementById('brandSub');
+                if (sub) {
+                    setTimeout(function() {
+                        typeTextCin(sub, 'AI v5.1 — ULTIMATE', 60);
+                    }, 200);
+                }
+            });
+        }
+    }, 800);
+    
+    startTerminalLog();
+    startProgress();
+}
+
+/* ═══ HIDE LOADER ═══ */
+function hideLoader() {
+    var loader = document.getElementById('closiwerLoader');
+    var app = document.querySelector('.app-container');
+    
+    if (!loader) return;
+    
+    loader.classList.add('fade-out');
+    if (app) app.classList.add('loaded');
+    
+    setTimeout(function() {
+        loader.classList.add('hidden');
+        setTimeout(function() {
+            if (loader.parentNode) loader.parentNode.removeChild(loader);
+        }, 500);
+    }, 1000);
+    
+    if (typeof initParticles === 'function') setTimeout(initParticles, 200);
+    if (typeof initMatrix === 'function') setTimeout(initMatrix, 400);
+    
+    console.log('✅ CLOSIWER loaded with cinematic animation!');
+}
+
+/* ═══ SKIP ═══ */
+function skipLoader() {
+    if (loaderState.done) return;
+    loaderState.done = true;
+    if (loaderState.animationId) cancelAnimationFrame(loaderState.animationId);
+    hideLoader();
+    if (typeof showToast === 'function') showToast('⏩ Skipped!');
+}
+
+/* ═══ AUTO-START ═══ */
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startCinematicLoader);
+} else {
+    if (document.getElementById('closiwerLoader')) {
+        startCinematicLoader();
+    }
+}
+
+/* ═══ FALLBACK ═══ */
+setTimeout(function() {
+    if (!loaderState.done) {
+        console.log('⏰ Loader timeout, forcing hide');
+        skipLoader();
+    }
+}, 15000);
+
+console.log('🎬 CINEMATIC LOADER v3.0 loaded!');
