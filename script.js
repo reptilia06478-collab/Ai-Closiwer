@@ -5134,3 +5134,172 @@ setTimeout(function() {
 }, 15000);
 
 console.log('🎬 CINEMATIC LOADER v3.0 loaded!');
+/* ═══════════════════════════════════════
+   v6.0 — PWA + PERFORMANCE + BUG FIXES
+═══════════════════════════════════════ */
+
+/* ═══ 1. PWA SERVICE WORKER ═══ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js')
+            .then(function(reg) {
+                console.log('✅ Service Worker registered:', reg.scope);
+            })
+            .catch(function(err) {
+                console.log('❌ SW failed:', err);
+            });
+    });
+}
+
+/* ═══ 2. PERFORMANCE — Defer non-critical init ═══ */
+function deferInit() {
+    var deferredModules = [
+        { fn: 'sbInit', delay: 2000 },
+        { fn: 'finInit', delay: 2500 },
+        { fn: 'rcRenderFavorites', delay: 3000 },
+        { fn: 'cpUpdateLineNumbers', delay: 3500 }
+    ];
+    
+    deferredModules.forEach(function(mod) {
+        setTimeout(function() {
+            if (typeof window[mod.fn] === 'function') {
+                try {
+                    window[mod.fn]();
+                    console.log('✅ Deferred:', mod.fn);
+                } catch(e) {
+                    console.log('⚠️ Deferred failed:', mod.fn, e.message);
+                }
+            }
+        }, mod.delay);
+    });
+}
+
+if (document.readyState === 'complete') {
+    deferInit();
+} else {
+    window.addEventListener('load', function() {
+        setTimeout(deferInit, 1500);
+    });
+}
+
+/* Idle task */
+function idleTask(fn) {
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(fn, { timeout: 3000 });
+    } else {
+        setTimeout(fn, 200);
+    }
+}
+
+/* Preload images */
+idleTask(function() {
+    var img = new Image();
+    img.src = 'Dev.png';
+});
+
+/* ═══ 3. BUG FIXES & ERROR HANDLING ═══ */
+
+/* Global error handler */
+window.addEventListener('error', function(e) {
+    console.error('🚨 Error:', e.message, 'at', e.filename + ':' + e.lineno);
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('🚨 Unhandled Promise:', e.reason);
+});
+
+/* Safe function call */
+function safeCall(fnName) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    try {
+        if (typeof window[fnName] === 'function') {
+            return window[fnName].apply(null, args);
+        }
+        return null;
+    } catch (e) {
+        console.error('❌ safeCall failed:', fnName, e.message);
+        return null;
+    }
+}
+
+/* Prevent double-tap zoom */
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+
+/* iOS keyboard fix */
+document.addEventListener('focusin', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setTimeout(function() {
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
+});
+
+/* localStorage quota handling */
+var _originalSetItem = localStorage.setItem;
+localStorage.setItem = function(key, value) {
+    try {
+        _originalSetItem.call(localStorage, key, value);
+    } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+            console.warn('⚠️ Storage full, cleaning...');
+            try {
+                localStorage.removeItem('closiwer_agent_logs');
+                localStorage.removeItem('closiwer_chat_history');
+                _originalSetItem.call(localStorage, key, value);
+            } catch (e2) {
+                console.error('❌ Storage full');
+                if (typeof showToast === 'function') showToast('⚠️ Storage penuh!');
+            }
+        }
+    }
+};
+
+/* Health check */
+setTimeout(function() {
+    var issues = [];
+    if (typeof config !== 'undefined' && (!config.apiKey || config.apiKey.length < 10)) {
+        issues.push('API Key belum diset');
+    }
+    try {
+        var used = JSON.stringify(localStorage).length;
+        if (used > 4000000) issues.push('Storage: ' + Math.round(used/1000000) + 'MB');
+    } catch(e) {}
+    console.log(issues.length ? '⚠️ Health: ' + issues.join(', ') : '✅ Health OK');
+}, 3000);
+
+/* ═══ 4. PWA INSTALL PROMPT ═══ */
+var deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('💡 PWA install available');
+    
+    /* Show install button kalau ada */
+    setTimeout(function() {
+        if (deferredPrompt && !localStorage.getItem('closiwer_pwa_dismissed')) {
+            if (confirm('📱 Install CLOSIWER AI di Home Screen?')) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function(choice) {
+                    if (choice.outcome === 'accepted') {
+                        console.log('✅ PWA installed');
+                        if (typeof showToast === 'function') showToast('📱 PWA installed!');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                localStorage.setItem('closiwer_pwa_dismissed', '1');
+            }
+        }
+    }, 5000);
+});
+
+/* Detect installed mode */
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('📱 Running as PWA');
+    document.body.classList.add('pwa-mode');
+}
+
+/* ═══ 5. VERSION CHECK ═══ */
+console.log('%c🎯 CLOSIWER AI v6.0', 'color: #d97757; font-size: 16px; font-weight: bold;');
+console.log('%cBatch 1: PWA + Performance + Bug Fixes ✅', 'color: #4ade80; font-size: 12px;');
