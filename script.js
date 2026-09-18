@@ -3063,3 +3063,1685 @@ function openCodeReviewer() {
 }
 
 console.log('💻 FITUR v5.1: Code Reviewer loaded!');
+/* ═══════════════════════════════════════
+   FITUR #6: AI STUDY BUDDY
+═══════════════════════════════════════ */
+
+var sbData = JSON.parse(localStorage.getItem('closiwer_study') || '{"subjects":[],"materi":[],"flashcards":[],"quizzes":[],"stats":{"streak":0,"totalTime":0,"cardsReviewed":0,"badges":0,"lastStudyDate":null}}');
+var sbCurrentFlashSession = null;
+var sbCurrentQuizSession = null;
+var sbTimerInterval = null;
+var sbTimerSeconds = 25 * 60;
+var sbTimerRunning = false;
+var sbTimerPreset = 25;
+
+/* ═══ SAVE ═══ */
+function sbSave() {
+    localStorage.setItem('closiwer_study', JSON.stringify(sbData));
+}
+
+/* ═══ INIT ═══ */
+function sbInit() {
+    sbUpdateStats();
+    sbRenderSubjects();
+    sbRenderMateriSelectors();
+}
+
+function sbSetTab(tab, el) {
+    document.querySelectorAll('.sb-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.sb-content').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    var content = document.querySelector('.sb-content[data-sb-tab="' + tab + '"]');
+    if (content) content.classList.add('active');
+    
+    if (tab === 'subjects') sbRenderSubjects();
+    if (tab === 'materi') sbRenderMateriSelectors();
+    if (tab === 'flashcards') sbRenderMateriSelectors();
+    if (tab === 'quiz') sbRenderMateriSelectors();
+}
+
+/* ═══ STATS ═══ */
+function sbUpdateStats() {
+    document.getElementById('sbStreak').textContent = sbData.stats.streak || 0;
+    var mins = Math.floor((sbData.stats.totalTime || 0) / 60);
+    document.getElementById('sbTotalTime').textContent = mins + 'm';
+    document.getElementById('sbCardsReviewed').textContent = sbData.stats.cardsReviewed || 0;
+    document.getElementById('sbBadges').textContent = sbData.stats.badges || 0;
+}
+
+function sbCheckStreak() {
+    var today = new Date().toDateString();
+    var last = sbData.stats.lastStudyDate;
+    if (last === today) return;
+    
+    var yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
+    if (last === yesterday) {
+        sbData.stats.streak = (sbData.stats.streak || 0) + 1;
+    } else {
+        sbData.stats.streak = 1;
+    }
+    sbData.stats.lastStudyDate = today;
+    sbSave();
+    sbUpdateStats();
+}
+
+/* ═══ SUBJECTS ═══ */
+function sbAddSubject() {
+    var input = document.getElementById('sbNewSubject');
+    var name = input.value.trim();
+    if (!name) { showToast('⚠️ Isi nama pelajaran'); return; }
+    
+    if (sbData.subjects.some(function(s) { return s.name.toLowerCase() === name.toLowerCase(); })) {
+        showToast('⚠️ Pelajaran udah ada');
+        return;
+    }
+    
+    var emoji = sbGetEmojiForSubject(name);
+    sbData.subjects.push({
+        id: 'subj_' + Date.now(),
+        name: name,
+        emoji: emoji,
+        createdAt: Date.now()
+    });
+    sbSave();
+    input.value = '';
+    sbRenderSubjects();
+    sbRenderMateriSelectors();
+    sbCheckStreak();
+    showToast('✅ Pelajaran ditambahkan!');
+}
+
+function sbGetEmojiForSubject(name) {
+    var lower = name.toLowerCase();
+    var map = {
+        matematika: '📐', math: '📐', fisika: '⚛️', kimia: '🧪', biologi: '🧬',
+        sejarah: '📜', geografi: '🗺️', ekonomi: '💰', bahasa: '📖',
+        inggris: '🇬🇧', indonesia: '🇮🇩', komputer: '💻', coding: '💻',
+        pemrograman: '💻', seni: '🎨', musik: '🎵', olahraga: '⚽',
+        agama: '🕌', pkn: '⚖️', sosiologi: '👥', antropologi: '🏛️',
+        statistik: '📊', kalkulus: '∫', aljabar: '🔢', geometri: '📏',
+        trigonometri: '📐', akuntansi: '🧾', manajemen: '📋'
+    };
+    for (var key in map) {
+        if (lower.indexOf(key) !== -1) return map[key];
+    }
+    return '📚';
+}
+
+function sbRenderSubjects() {
+    var list = document.getElementById('sbSubjectsList');
+    if (sbData.subjects.length === 0) {
+        list.innerHTML = '<div class="sb-empty"><div class="sb-empty-icon">📚</div>Belum ada pelajaran.<br><br>Tambah pelajaran dulu di atas! 👆</div>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < sbData.subjects.length; i++) {
+        var subj = sbData.subjects[i];
+        var materiCount = sbData.materi.filter(function(m) { return m.subjectId === subj.id; }).length;
+        var flashCount = sbData.flashcards.filter(function(f) { return f.subjectId === subj.id; }).length;
+        var quizCount = sbData.quizzes.filter(function(q) { return q.subjectId === subj.id; }).length;
+        
+        html += '<div class="sb-subject" onclick="sbSelectSubject(\'' + subj.id + '\')">';
+        html += '<div class="sb-subject-emoji">' + subj.emoji + '</div>';
+        html += '<div class="sb-subject-info">';
+        html += '<div class="sb-subject-name">' + escapeHtml(subj.name) + '</div>';
+        html += '<div class="sb-subject-meta">';
+        html += '<span>📝 ' + materiCount + ' materi</span>';
+        html += '<span>🎴 ' + flashCount + ' kartu</span>';
+        html += '<span>❓ ' + quizCount + ' soal</span>';
+        html += '</div></div>';
+        html += '<button class="sb-subject-delete" onclick="event.stopPropagation(); sbDeleteSubject(\'' + subj.id + '\')">🗑️</button>';
+        html += '</div>';
+    }
+    list.innerHTML = html;
+}
+
+function sbSelectSubject(id) {
+    var subj = sbData.subjects.find(function(s) { return s.id === id; });
+    if (!subj) return;
+    
+    /* Auto-select di materi tab */
+    document.getElementById('sbMateriSubject').value = id;
+    sbRenderMateri();
+    
+    /* Auto-switch to materi tab */
+    var tabEl = document.querySelectorAll('.sb-tab')[1];
+    sbSetTab('materi', tabEl);
+    
+    showToast('📚 ' + subj.name + ' dipilih');
+}
+
+function sbDeleteSubject(id) {
+    if (!confirm('Hapus pelajaran ini? Semua materi & kartu akan dihapus.')) return;
+    sbData.subjects = sbData.subjects.filter(function(s) { return s.id !== id; });
+    sbData.materi = sbData.materi.filter(function(m) { return m.subjectId !== id; });
+    sbData.flashcards = sbData.flashcards.filter(function(f) { return f.subjectId !== id; });
+    sbData.quizzes = sbData.quizzes.filter(function(q) { return q.subjectId !== id; });
+    sbSave();
+    sbRenderSubjects();
+    sbRenderMateriSelectors();
+    showToast('🗑️ Pelajaran dihapus');
+}
+
+/* ═══ MATERI ═══ */
+function sbRenderMateriSelectors() {
+    var selects = ['sbMateriSubject', 'sbFlashSubject', 'sbQuizSubject'];
+    for (var i = 0; i < selects.length; i++) {
+        var sel = document.getElementById(selects[i]);
+        if (!sel) continue;
+        var currentValue = sel.value;
+        var html = '<option value="">-- Pilih Pelajaran --</option>';
+        for (var j = 0; j < sbData.subjects.length; j++) {
+            var s = sbData.subjects[j];
+            html += '<option value="' + s.id + '">' + s.emoji + ' ' + escapeHtml(s.name) + '</option>';
+        }
+        sel.innerHTML = html;
+        if (currentValue) sel.value = currentValue;
+    }
+}
+
+function sbSaveMateri() {
+    var subjectId = document.getElementById('sbMateriSubject').value;
+    var title = document.getElementById('sbMateriTitle').value.trim();
+    var content = document.getElementById('sbMateriContent').value.trim();
+    
+    if (!subjectId) { showToast('⚠️ Pilih pelajaran dulu'); return; }
+    if (!title) { showToast('⚠️ Isi judul materi'); return; }
+    if (!content || content.length < 20) { showToast('⚠️ Isi materi terlalu pendek (min 20 karakter)'); return; }
+    
+    sbData.materi.push({
+        id: 'mat_' + Date.now(),
+        subjectId: subjectId,
+        title: title,
+        content: content,
+        createdAt: Date.now()
+    });
+    sbSave();
+    document.getElementById('sbMateriTitle').value = '';
+    document.getElementById('sbMateriContent').value = '';
+    sbRenderMateri();
+    sbRenderSubjects();
+    sbCheckStreak();
+    showToast('✅ Materi tersimpan!');
+}
+
+function sbRenderMateri() {
+    var subjectId = document.getElementById('sbMateriSubject').value;
+    var list = document.getElementById('sbMateriList');
+    if (!subjectId) { list.innerHTML = ''; return; }
+    
+    var filtered = sbData.materi.filter(function(m) { return m.subjectId === subjectId; });
+    if (filtered.length === 0) {
+        list.innerHTML = '<div class="sb-empty" style="padding: 20px;"><div style="font-size: 12px;">Belum ada materi untuk pelajaran ini</div></div>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+        var m = filtered[i];
+        var preview = m.content.replace(/\n/g, ' ').slice(0, 100);
+        html += '<div class="sb-materi-item">';
+        html += '<div class="sb-materi-header">';
+        html += '<div class="sb-materi-title">📖 ' + escapeHtml(m.title) + '</div>';
+        html += '<button class="sb-materi-delete" onclick="sbDeleteMateri(\'' + m.id + '\')">🗑️</button>';
+        html += '</div>';
+        html += '<div class="sb-materi-preview">' + escapeHtml(preview) + '...</div>';
+        html += '</div>';
+    }
+    list.innerHTML = html;
+}
+
+function sbDeleteMateri(id) {
+    if (!confirm('Hapus materi ini?')) return;
+    sbData.materi = sbData.materi.filter(function(m) { return m.id !== id; });
+    sbSave();
+    sbRenderMateri();
+    sbRenderSubjects();
+    showToast('🗑️ Materi dihapus');
+}
+
+/* ═══ FLASHCARDS ═══ */
+function sbGenerateFlashcards() {
+    var subjectId = document.getElementById('sbFlashSubject').value;
+    if (!subjectId) { showToast('⚠️ Pilih pelajaran dulu'); return; }
+    
+    var materi = sbData.materi.filter(function(m) { return m.subjectId === subjectId; });
+    if (materi.length === 0) {
+        showToast('⚠️ Belum ada materi. Tambah materi dulu!');
+        return;
+    }
+    
+    var combinedContent = materi.map(function(m) { return m.title + '\n' + m.content; }).join('\n\n');
+    
+    var flashList = document.getElementById('sbFlashList');
+    flashList.innerHTML = '<div class="rc-loading"><div class="rc-spinner"></div><div style="font-size: 12px; color: var(--text-muted);">AI bikin flashcards... 🎴</div></div>';
+    
+    var apiKey = (typeof config !== 'undefined' && config.apiKey) ? config.apiKey : '';
+    
+    if (!apiKey || apiKey.length < 10) {
+        setTimeout(function() {
+            var dummy = sbGenerateDummyFlashcards(combinedContent, subjectId);
+            sbSaveFlashcards(dummy, subjectId);
+            showToast('💡 Demo flashcards — isi API key untuk AI');
+        }, 1200);
+        return;
+    }
+    
+    var prompt = 'Buat 5-8 flashcards dari materi berikut:\n\n' + combinedContent.slice(0, 3000) + '\n\n' +
+        'Format JSON valid:\n' +
+        '{"cards": [{"q": "pertanyaan", "a": "jawaban singkat"}]}\n\n' +
+        'Pertanyaan harus spesifik, jawaban ringkas (1-2 kalimat). Bahasa Indonesia.';
+    
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+            model: config.model || 'llama-3.1-8b-instant',
+            messages: [
+                { role: 'system', content: 'Kamu adalah teacher yang bikin flashcards. Jawab HANYA JSON valid tanpa teks lain.' },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.5,
+            max_tokens: 1500,
+            response_format: { type: 'json_object' }
+        })
+    })
+    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function(data) {
+        var content = data.choices[0].message.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        var parsed = JSON.parse(content);
+        var cards = parsed.cards || parsed.flashcards || [];
+        sbSaveFlashcards(cards, subjectId);
+    })
+    .catch(function(err) {
+        console.error('[Flashcards]', err);
+        var dummy = sbGenerateDummyFlashcards(combinedContent, subjectId);
+        sbSaveFlashcards(dummy, subjectId);
+        showToast('⚠️ AI gagal, pakai demo');
+    });
+}
+
+function sbGenerateDummyFlashcards(content, subjectId) {
+    var sentences = content.split(/[.!?\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 20 && s.length < 200; });
+    if (sentences.length < 2) sentences = ['Materi belajar perlu dipahami dengan baik.', 'Praktek lebih penting dari teori.'];
+    
+    var cards = [];
+    for (var i = 0; i < Math.min(5, sentences.length); i++) {
+        var s = sentences[i];
+        cards.push({
+            q: 'Apa yang dimaksud dengan: "' + s.slice(0, 60) + '..."?',
+            a: s
+        });
+    }
+    return cards;
+}
+
+function sbSaveFlashcards(cards, subjectId) {
+    /* Hapus flashcard lama untuk subject ini */
+    sbData.flashcards = sbData.flashcards.filter(function(f) { return f.subjectId !== subjectId; });
+    
+    for (var i = 0; i < cards.length; i++) {
+        sbData.flashcards.push({
+            id: 'fc_' + Date.now() + '_' + i,
+            subjectId: subjectId,
+            question: cards[i].q,
+            answer: cards[i].a,
+            learned: false,
+            reviewCount: 0,
+            createdAt: Date.now()
+        });
+    }
+    sbSave();
+    sbRenderFlashList();
+    sbRenderSubjects();
+    showToast('✅ ' + cards.length + ' flashcards dibuat!');
+}
+
+function sbRenderFlashList() {
+    var subjectId = document.getElementById('sbFlashSubject').value;
+    var list = document.getElementById('sbFlashList');
+    if (!subjectId) { list.innerHTML = ''; return; }
+    
+    var filtered = sbData.flashcards.filter(function(f) { return f.subjectId === subjectId; });
+    if (filtered.length === 0) {
+        list.innerHTML = '<div class="sb-empty"><div class="sb-empty-icon">🎴</div>Belum ada flashcards.<br><br>Klik 🤖 Generate di atas!</div>';
+        return;
+    }
+    
+    var html = '<button class="sb-btn-primary" onclick="sbStartFlashReview(\'' + subjectId + '\')">🎯 Mulai Review (' + filtered.length + ' kartu)</button>';
+    html += '<div style="display: flex; flex-direction: column; gap: 8px;">';
+    for (var i = 0; i < filtered.length; i++) {
+        var f = filtered[i];
+        html += '<div class="sb-flash-item">';
+        html += '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">';
+        html += '<div class="sb-flash-q" style="flex: 1;">Q: ' + escapeHtml(f.question) + '</div>';
+        html += '<span class="sb-flash-status ' + (f.learned ? 'learned' : 'new') + '">' + (f.learned ? '✓ Hafal' : 'Baru') + '</span>';
+        html += '<button class="sb-materi-delete" onclick="sbDeleteFlashcard(\'' + f.id + '\')">🗑️</button>';
+        html += '</div>';
+        html += '<div class="sb-flash-a">A: ' + escapeHtml(f.answer) + '</div>';
+        html += '</div>';
+    }
+    html += '</div>';
+    list.innerHTML = html;
+}
+
+function sbDeleteFlashcard(id) {
+    sbData.flashcards = sbData.flashcards.filter(function(f) { return f.id !== id; });
+    sbSave();
+    sbRenderFlashList();
+    sbRenderSubjects();
+}
+
+/* ═══ FLASHCARD REVIEW ═══ */
+function sbStartFlashReview(subjectId) {
+    var cards = sbData.flashcards.filter(function(f) { return f.subjectId === subjectId; });
+    if (cards.length === 0) { showToast('⚠️ Belum ada kartu'); return; }
+    
+    /* Shuffle */
+    cards = cards.slice().sort(function() { return 0.5 - Math.random(); });
+    
+    sbCurrentFlashSession = {
+        cards: cards,
+        index: 0,
+        correct: 0,
+        wrong: 0,
+        flipped: false
+    };
+    
+    document.getElementById('sbFlashModal').classList.add('show');
+    sbShowFlashCard();
+}
+
+function sbShowFlashCard() {
+    var session = sbCurrentFlashSession;
+    if (!session) return;
+    if (session.index >= session.cards.length) {
+        sbEndFlashReview();
+        return;
+    }
+    
+    var card = session.cards[session.index];
+    session.flipped = false;
+    
+    document.getElementById('sbFlashProgress').textContent = 'Kartu ' + (session.index + 1) + ' dari ' + session.cards.length;
+    document.getElementById('sbFlashFront').textContent = card.question;
+    document.getElementById('sbFlashFront').style.display = 'block';
+    document.getElementById('sbFlashBack').textContent = card.answer;
+    document.getElementById('sbFlashBack').style.display = 'none';
+    document.getElementById('sbFlashActions').style.display = 'none';
+}
+
+function sbFlipCard() {
+    var session = sbCurrentFlashSession;
+    if (!session || session.flipped) return;
+    session.flipped = true;
+    document.getElementById('sbFlashFront').style.display = 'none';
+    document.getElementById('sbFlashBack').style.display = 'block';
+    document.getElementById('sbFlashActions').style.display = 'grid';
+}
+
+function sbAnswerCard(correct) {
+    var session = sbCurrentFlashSession;
+    if (!session) return;
+    
+    var card = session.cards[session.index];
+    var origCard = sbData.flashcards.find(function(f) { return f.id === card.id; });
+    if (origCard) {
+        origCard.reviewCount = (origCard.reviewCount || 0) + 1;
+        if (correct) origCard.learned = true;
+        else origCard.learned = false;
+    }
+    
+    if (correct) session.correct++;
+    else session.wrong++;
+    
+    sbData.stats.cardsReviewed = (sbData.stats.cardsReviewed || 0) + 1;
+    sbSave();
+    
+    session.index++;
+    sbShowFlashCard();
+}
+
+function sbEndFlashReview() {
+    var session = sbCurrentFlashSession;
+    if (!session) return;
+    
+    var total = session.cards.length;
+    var correct = session.correct;
+    var pct = Math.round((correct / total) * 100);
+    
+    document.getElementById('sbFlashProgress').textContent = '🎉 Selesai!';
+    document.getElementById('sbFlashFront').innerHTML = '<div style="text-align: center;"><div style="font-size: 48px; margin-bottom: 12px;">🎉</div><div style="font-size: 20px; font-weight: 800; margin-bottom: 8px;">Selesai!</div><div style="font-size: 14px; opacity: 0.9;">Score: ' + correct + ' / ' + total + ' (' + pct + '%)</div></div>';
+    document.getElementById('sbFlashFront').style.display = 'block';
+    document.getElementById('sbFlashBack').style.display = 'none';
+    document.getElementById('sbFlashActions').style.display = 'none';
+    
+    sbUpdateStats();
+    sbCheckStreak();
+    sbRenderFlashList();
+    sbRenderSubjects();
+    sbCheckBadges();
+    
+    sbCurrentFlashSession = null;
+}
+
+/* ═══ QUIZ ═══ */
+function sbGenerateQuiz() {
+    var subjectId = document.getElementById('sbQuizSubject').value;
+    if (!subjectId) { showToast('⚠️ Pilih pelajaran'); return; }
+    
+    var materi = sbData.materi.filter(function(m) { return m.subjectId === subjectId; });
+    if (materi.length === 0) {
+        showToast('⚠️ Belum ada materi');
+        return;
+    }
+    
+    var content = materi.map(function(m) { return m.title + '\n' + m.content; }).join('\n\n');
+    var list = document.getElementById('sbQuizList');
+    list.innerHTML = '<div class="rc-loading"><div class="rc-spinner"></div><div style="font-size: 12px; color: var(--text-muted);">AI bikin quiz... ❓</div></div>';
+    
+    var apiKey = (typeof config !== 'undefined' && config.apiKey) ? config.apiKey : '';
+    
+    if (!apiKey || apiKey.length < 10) {
+        setTimeout(function() {
+            sbSaveQuiz(sbGenerateDummyQuiz(content), subjectId);
+            showToast('💡 Demo quiz');
+        }, 1200);
+        return;
+    }
+    
+    var prompt = 'Buat 5 soal pilihan ganda dari materi berikut:\n\n' + content.slice(0, 3000) + '\n\n' +
+        'Format JSON:\n' +
+        '{"questions": [{"q": "pertanyaan", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "penjelasan singkat"}]}\n\n' +
+        'correct = index jawaban benar (0-3). Bahasa Indonesia.';
+    
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+            model: config.model || 'llama-3.1-8b-instant',
+            messages: [
+                { role: 'system', content: 'Kamu teacher yang bikin soal. Jawab HANYA JSON valid.' },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.6,
+            max_tokens: 2000,
+            response_format: { type: 'json_object' }
+        })
+    })
+    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function(data) {
+        var content2 = data.choices[0].message.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        var parsed = JSON.parse(content2);
+        var questions = parsed.questions || parsed.quiz || [];
+        sbSaveQuiz(questions, subjectId);
+    })
+    .catch(function(err) {
+        console.error('[Quiz]', err);
+        sbSaveQuiz(sbGenerateDummyQuiz(content), subjectId);
+        showToast('⚠️ AI gagal, pakai demo');
+    });
+}
+
+function sbGenerateDummyQuiz(content) {
+    var sentences = content.split(/[.!?\n]+/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 20 && s.length < 200; });
+    if (sentences.length < 2) sentences = ['Ini adalah materi pelajaran.', 'Belajar itu penting.'];
+    
+    var questions = [];
+    for (var i = 0; i < Math.min(5, sentences.length); i++) {
+        var s = sentences[i];
+        questions.push({
+            q: 'Manakah pernyataan yang BENAR?',
+            options: [s.slice(0, 80), 'Pernyataan salah 1', 'Pernyataan salah 2', 'Pernyataan salah 3'],
+            correct: 0,
+            explanation: 'Jawaban benar ada di pilihan pertama.'
+        });
+    }
+    return questions;
+}
+
+function sbSaveQuiz(questions, subjectId) {
+    sbData.quizzes = sbData.quizzes.filter(function(q) { return q.subjectId !== subjectId; });
+    sbData.quizzes.push({
+        id: 'quiz_' + Date.now(),
+        subjectId: subjectId,
+        questions: questions,
+        createdAt: Date.now()
+    });
+    sbSave();
+    sbRenderQuizList();
+    sbRenderSubjects();
+    showToast('✅ ' + questions.length + ' soal dibuat!');
+}
+
+function sbRenderQuizList() {
+    var subjectId = document.getElementById('sbQuizSubject').value;
+    var list = document.getElementById('sbQuizList');
+    if (!subjectId) { list.innerHTML = ''; return; }
+    
+    var quiz = sbData.quizzes.find(function(q) { return q.subjectId === subjectId; });
+    if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+        list.innerHTML = '<div class="sb-empty"><div class="sb-empty-icon">❓</div>Belum ada quiz.<br><br>Klik 🤖 Generate Quiz!</div>';
+        return;
+    }
+    
+    var html = '<button class="sb-btn-primary" onclick="sbStartQuiz(\'' + subjectId + '\')">🎯 Mulai Quiz (' + quiz.questions.length + ' soal)</button>';
+    html += '<div class="sb-empty" style="padding: 20px; font-size: 11px;">📝 Terakhir dibuat: ' + new Date(quiz.createdAt).toLocaleDateString('id-ID') + '</div>';
+    list.innerHTML = html;
+}
+
+function sbStartQuiz(subjectId) {
+    var quiz = sbData.quizzes.find(function(q) { return q.subjectId === subjectId; });
+    if (!quiz) return;
+    
+    sbCurrentQuizSession = {
+        quiz: quiz,
+        index: 0,
+        score: 0,
+        answered: false
+    };
+    
+    document.getElementById('sbQuizModal').classList.add('show');
+    sbShowQuizQuestion();
+}
+
+function sbShowQuizQuestion() {
+    var session = sbCurrentQuizSession;
+    if (!session) return;
+    
+    if (session.index >= session.quiz.questions.length) {
+        sbEndQuiz();
+        return;
+    }
+    
+    var q = session.quiz.questions[session.index];
+    session.answered = false;
+    
+    document.getElementById('sbQuizProgress').textContent = 'Soal ' + (session.index + 1) + ' dari ' + session.quiz.questions.length;
+    document.getElementById('sbQuizScore').textContent = 'Score: ' + session.score;
+    document.getElementById('sbQuizQuestion').textContent = q.q;
+    document.getElementById('sbQuizFeedback').textContent = '';
+    
+    var html = '';
+    for (var i = 0; i < q.options.length; i++) {
+        html += '<button class="sb-quiz-option" onclick="sbAnswerQuiz(' + i + ')">' + String.fromCharCode(65 + i) + '. ' + escapeHtml(q.options[i]) + '</button>';
+    }
+    document.getElementById('sbQuizOptions').innerHTML = html;
+}
+
+function sbAnswerQuiz(choice) {
+    var session = sbCurrentQuizSession;
+    if (!session || session.answered) return;
+    session.answered = true;
+    
+    var q = session.quiz.questions[session.index];
+    var correct = q.correct;
+    var options = document.querySelectorAll('.sb-quiz-option');
+    
+    options.forEach(function(opt, idx) {
+        opt.classList.add('disabled');
+        if (idx === correct) opt.classList.add('correct');
+        else if (idx === choice) opt.classList.add('wrong');
+    });
+    
+    if (choice === correct) {
+        session.score++;
+        document.getElementById('sbQuizFeedback').innerHTML = '<span style="color: #4ade80;">✅ Benar! ' + (q.explanation ? escapeHtml(q.explanation) : '') + '</span>';
+    } else {
+        document.getElementById('sbQuizFeedback').innerHTML = '<span style="color: #ef4444;">❌ Salah. Jawaban: ' + String.fromCharCode(65 + correct) + '. ' + (q.explanation ? escapeHtml(q.explanation) : '') + '</span>';
+    }
+    
+    document.getElementById('sbQuizScore').textContent = 'Score: ' + session.score;
+    
+    setTimeout(function() {
+        session.index++;
+        sbShowQuizQuestion();
+    }, 2000);
+}
+
+function sbEndQuiz() {
+    var session = sbCurrentQuizSession;
+    if (!session) return;
+    var total = session.quiz.questions.length;
+    var score = session.score;
+    var pct = Math.round((score / total) * 100);
+    
+    document.getElementById('sbQuizProgress').textContent = '🎉 Selesai!';
+    document.getElementById('sbQuizQuestion').innerHTML = '<div style="text-align: center; padding: 20px;"><div style="font-size: 48px; margin-bottom: 12px;">' + (pct >= 80 ? '🏆' : pct >= 60 ? '👍' : '📚') + '</div><div style="font-size: 22px; font-weight: 800; margin-bottom: 8px;">Score: ' + score + ' / ' + total + '</div><div style="font-size: 16px; color: var(--primary); font-weight: 700;">' + pct + '%</div><div style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">' + (pct >= 80 ? 'Mantap! Lu udah paham materi ini! 🎉' : pct >= 60 ? 'Bagus! Sedikit lagi sempurna 💪' : 'Perlu review lagi nih 📚') + '</div></div>';
+    document.getElementById('sbQuizOptions').innerHTML = '<button class="sb-btn-primary" onclick="closeModal(\'sbQuizModal\'); sbCurrentQuizSession=null;">✓ Selesai</button>';
+    document.getElementById('sbQuizFeedback').textContent = '';
+    
+    sbCheckStreak();
+    sbCheckBadges();
+    sbCurrentQuizSession = null;
+}
+
+/* ═══ TIMER ═══ */
+function sbSetTimerPreset(mins) {
+    sbTimerPreset = mins;
+    sbTimerSeconds = mins * 60;
+    document.querySelectorAll('.sb-preset-btn').forEach(function(b) { b.classList.remove('active'); });
+    event.target.classList.add('active');
+    document.getElementById('sbTimerMode').textContent = '⏱️ Pomodoro ' + mins + ' menit';
+    sbResetTimer();
+}
+
+function sbToggleTimer() {
+    var btn = document.getElementById('sbTimerStartBtn');
+    if (sbTimerRunning) {
+        clearInterval(sbTimerInterval);
+        sbTimerRunning = false;
+        btn.textContent = '▶️ Lanjut';
+        btn.classList.add('paused');
+    } else {
+        if (sbTimerSeconds <= 0) sbTimerSeconds = sbTimerPreset * 60;
+        sbTimerRunning = true;
+        btn.textContent = '⏸️ Pause';
+        btn.classList.remove('paused');
+        
+        sbTimerInterval = setInterval(function() {
+            sbTimerSeconds--;
+            sbUpdateTimerDisplay();
+            
+            if (sbTimerSeconds <= 0) {
+                clearInterval(sbTimerInterval);
+                sbTimerRunning = false;
+                btn.textContent = '▶️ Mulai';
+                btn.classList.remove('paused');
+                sbData.stats.totalTime = (sbData.stats.totalTime || 0) + (sbTimerPreset * 60);
+                sbSave();
+                sbUpdateStats();
+                sbCheckStreak();
+                showToast('⏰ Waktu habis! Istirahat dulu 🎉');
+                
+                try {
+                    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.frequency.value = 880;
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+                    osc.start(); osc.stop(ctx.currentTime + 1.5);
+                } catch(e) {}
+            }
+        }, 1000);
+    }
+}
+
+function sbResetTimer() {
+    clearInterval(sbTimerInterval);
+    sbTimerRunning = false;
+    sbTimerSeconds = sbTimerPreset * 60;
+    sbUpdateTimerDisplay();
+    var btn = document.getElementById('sbTimerStartBtn');
+    if (btn) { btn.textContent = '▶️ Mulai'; btn.classList.remove('paused'); }
+}
+
+function sbUpdateTimerDisplay() {
+    var m = Math.floor(sbTimerSeconds / 60);
+    var s = sbTimerSeconds % 60;
+    document.getElementById('sbTimerClock').textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+/* ═══ BADGES ═══ */
+function sbCheckBadges() {
+    var badges = 0;
+    if (sbData.stats.streak >= 3) badges++;
+    if (sbData.stats.streak >= 7) badges++;
+    if (sbData.stats.streak >= 30) badges++;
+    if (sbData.stats.cardsReviewed >= 50) badges++;
+    if (sbData.stats.cardsReviewed >= 200) badges++;
+    if (sbData.stats.totalTime >= 3600) badges++;
+    if (sbData.stats.totalTime >= 36000) badges++;
+    if (sbData.subjects.length >= 3) badges++;
+    if (sbData.subjects.length >= 5) badges++;
+    if (sbData.materi.length >= 10) badges++;
+    
+    var oldBadges = sbData.stats.badges || 0;
+    sbData.stats.badges = badges;
+    if (badges > oldBadges) {
+        sbSave();
+        sbUpdateStats();
+        setTimeout(function() { showToast('🏆 Badge baru! Total: ' + badges); }, 1500);
+    }
+}
+
+/* ═══ QUICK ACCESS ═══ */
+function openStudyBuddy() {
+    var modal = document.getElementById('studyModal');
+    if (modal) {
+        modal.classList.add('show');
+        sbInit();
+    }
+}
+
+/* ═══ AUTO-INIT ═══ */
+setTimeout(function() {
+    sbInit();
+    sbUpdateTimerDisplay();
+}, 1500);
+
+console.log('📚 FITUR v5.1: Study Buddy loaded!');
+/* ═══════════════════════════════════════
+   FITUR #7: AI AGENT MODE
+═══════════════════════════════════════ */
+
+var agAgents = JSON.parse(localStorage.getItem('closiwer_agents') || '[]');
+var agLogs = JSON.parse(localStorage.getItem('closiwer_agent_logs') || '[]');
+var agIntervals = {};
+var agLastRunTime = {};
+
+/* ═══ SAVE ═══ */
+function agSave() {
+    localStorage.setItem('closiwer_agents', JSON.stringify(agAgents));
+    localStorage.setItem('closiwer_agent_logs', JSON.stringify(agLogs.slice(0, 100)));
+}
+
+/* ═══ TABS ═══ */
+function agSetTab(tab, el) {
+    document.querySelectorAll('.ag-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.ag-content').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    var content = document.querySelector('.ag-content[data-ag-tab="' + tab + '"]');
+    if (content) content.classList.add('active');
+    
+    if (tab === 'active') agRenderActive();
+    if (tab === 'presets') agRenderPresets();
+    if (tab === 'logs') agRenderLogs();
+}
+
+/* ═══ TRIGGER FIELDS ═══ */
+function agUpdateTriggerFields() {
+    var type = document.getElementById('agTriggerType').value;
+    var container = document.getElementById('agTriggerFields');
+    var html = '';
+    
+    if (type === 'time') {
+        html = '<div class="field"><label>🕐 Jam Berapa?</label>' +
+            '<input type="time" id="agTriggerTime" class="sb-input" value="07:00">' +
+            '<div class="ag-field-hint">💡 Agent bakal jalan tiap hari di jam ini</div></div>';
+    } else if (type === 'interval') {
+        html = '<div class="field"><label>⏱️ Setiap Berapa Menit?</label>' +
+            '<select id="agTriggerInterval" class="sb-select">' +
+            '<option value="1">1 menit (testing)</option>' +
+            '<option value="5">5 menit</option>' +
+            '<option value="15">15 menit</option>' +
+            '<option value="30">30 menit</option>' +
+            '<option value="60" selected>1 jam</option>' +
+            '<option value="120">2 jam</option></select></div>';
+    } else if (type === 'weekday') {
+        html = '<div class="field"><label>📅 Hari Apa?</label>' +
+            '<select id="agTriggerWeekday" class="sb-select">' +
+            '<option value="1">Senin</option><option value="2">Selasa</option>' +
+            '<option value="3">Rabu</option><option value="4">Kamis</option>' +
+            '<option value="5">Jumat</option><option value="6">Sabtu</option>' +
+            '<option value="0">Minggu</option></select></div>' +
+            '<div class="field"><label>🕐 Jam Berapa?</label>' +
+            '<input type="time" id="agTriggerTime" class="sb-input" value="09:00"></div>';
+    } else if (type === 'keyword') {
+        html = '<div class="field"><label>💬 Keyword Trigger</label>' +
+            '<input type="text" id="agTriggerKeyword" class="sb-input" placeholder="contoh: reminder, bantu, urgent">' +
+            '<div class="ag-field-hint">💡 Kalau lu kirim chat dengan kata ini, agent bakal jalan</div></div>';
+    } else if (type === 'once') {
+        html = '<div class="field"><label>📅 Tanggal</label>' +
+            '<input type="date" id="agTriggerDate" class="sb-input"></div>' +
+            '<div class="field"><label>🕐 Jam</label>' +
+            '<input type="time" id="agTriggerTime" class="sb-input" value="09:00"></div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+/* ═══ ACTION FIELDS ═══ */
+function agUpdateActionFields() {
+    var type = document.getElementById('agActionType').value;
+    var container = document.getElementById('agActionFields');
+    var html = '';
+    
+    if (type === 'notify') {
+        html = '<div class="field"><label>🔔 Pesan Notifikasi</label>' +
+            '<input type="text" id="agActionMessage" class="sb-input" placeholder="contoh: Jangan lupa minum air! 💧"></div>';
+    } else if (type === 'chat') {
+        html = '<div class="field"><label>💬 Pertanyaan ke AI</label>' +
+            '<input type="text" id="agActionPrompt" class="sb-input" placeholder="contoh: Bikin quote motivasi hari ini">' +
+            '<div class="ag-field-hint">💡 AI bakal jawab, hasilnya masuk ke chat</div></div>';
+    } else if (type === 'note') {
+        html = '<div class="field"><label>📝 Judul Catatan</label>' +
+            '<input type="text" id="agActionTitle" class="sb-input" placeholder="contoh: Jurnal Harian">' +
+            '<div class="field"><label>Isi Catatan</label>' +
+            '<input type="text" id="agActionMessage" class="sb-input" placeholder="Tulis disini..."></div></div>';
+    } else if (type === 'reminder') {
+        html = '<div class="field"><label>⏰ Reminder Text</label>' +
+            '<input type="text" id="agActionMessage" class="sb-input" placeholder="contoh: Cek email penting"></div>';
+    } else if (type === 'auto_message') {
+        html = '<div class="field"><label>💌 Pesan Auto Reply</label>' +
+            '<input type="text" id="agActionMessage" class="sb-input" placeholder="Balas otomatis..."></div>';
+    } else if (type === 'custom') {
+        html = '<div class="field"><label>🧩 JavaScript Code</label>' +
+            '<textarea id="agActionCode" class="sb-textarea" style="font-family: \'JetBrains Mono\', monospace; min-height: 120px;" placeholder="// Code jalan otomatis\n// Contoh:\nconsole.log(\'Agent jalan!\');\nalert(\'Halo!\');"></textarea>' +
+            '<div class="ag-field-hint">⚠️ Hati-hati! Code bakal dieksekusi real</div></div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+/* ═══ CREATE AGENT ═══ */
+function agCreateAgent() {
+    var name = document.getElementById('agName').value.trim();
+    if (!name) { showToast('⚠️ Isi nama agent'); return; }
+    
+    var triggerType = document.getElementById('agTriggerType').value;
+    var actionType = document.getElementById('agActionType').value;
+    
+    var trigger = { type: triggerType };
+    if (triggerType === 'time') {
+        trigger.time = document.getElementById('agTriggerTime').value;
+    } else if (triggerType === 'interval') {
+        trigger.minutes = parseInt(document.getElementById('agTriggerInterval').value);
+    } else if (triggerType === 'weekday') {
+        trigger.weekday = parseInt(document.getElementById('agTriggerWeekday').value);
+        trigger.time = document.getElementById('agTriggerTime').value;
+    } else if (triggerType === 'keyword') {
+        trigger.keyword = document.getElementById('agTriggerKeyword').value.trim().toLowerCase();
+        if (!trigger.keyword) { showToast('⚠️ Isi keyword'); return; }
+    } else if (triggerType === 'once') {
+        trigger.date = document.getElementById('agTriggerDate').value;
+        trigger.time = document.getElementById('agTriggerTime').value;
+        if (!trigger.date) { showToast('⚠️ Isi tanggal'); return; }
+    }
+    
+    var action = { type: actionType };
+    if (actionType === 'notify' || actionType === 'reminder' || actionType === 'auto_message') {
+        action.message = document.getElementById('agActionMessage').value.trim();
+        if (!action.message) { showToast('⚠️ Isi message'); return; }
+    } else if (actionType === 'chat') {
+        action.prompt = document.getElementById('agActionPrompt').value.trim();
+        if (!action.prompt) { showToast('⚠️ Isi prompt'); return; }
+    } else if (actionType === 'note') {
+        action.title = document.getElementById('agActionTitle').value.trim();
+        action.message = document.getElementById('agActionMessage').value.trim();
+    } else if (actionType === 'custom') {
+        action.code = document.getElementById('agActionCode').value;
+    }
+    
+    var agent = {
+        id: 'agent_' + Date.now(),
+        name: name,
+        trigger: trigger,
+        action: action,
+        enabled: true,
+        createdAt: Date.now(),
+        runCount: 0
+    };
+    
+    agAgents.push(agent);
+    agSave();
+    
+    /* Reset form */
+    document.getElementById('agName').value = '';
+    document.getElementById('agActionMessage') && (document.getElementById('agActionMessage').value = '');
+    document.getElementById('agActionPrompt') && (document.getElementById('agActionPrompt').value = '');
+    
+    agStartAgent(agent);
+    showToast('🤖 Agent aktif!');
+    agSetTab('active', document.querySelectorAll('.ag-tab')[1]);
+}
+
+/* ═══ RENDER ACTIVE ═══ */
+function agRenderActive() {
+    var list = document.getElementById('agActiveList');
+    if (agAgents.length === 0) {
+        list.innerHTML = '<div class="ag-empty"><div class="ag-empty-icon">🤖</div>Belum ada agent.<br><br>Bikin di tab ➕ Buat Agent!</div>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < agAgents.length; i++) {
+        var a = agAgents[i];
+        var triggerDesc = agDescribeTrigger(a.trigger);
+        var actionDesc = agDescribeAction(a.action);
+        
+        html += '<div class="ag-agent-card ' + (a.enabled ? '' : 'disabled') + '">';
+        html += '<div class="ag-agent-header">';
+        html += '<div class="ag-agent-status-dot ' + (a.enabled ? '' : 'off') + '"></div>';
+        html += '<div class="ag-agent-name">' + escapeHtml(a.name) + '</div>';
+        html += '<button class="ag-agent-toggle ' + (a.enabled ? 'on' : 'off') + '" onclick="agToggleAgent(\'' + a.id + '\')">' + (a.enabled ? '⚡ ON' : '💤 OFF') + '</button>';
+        html += '<button class="ag-agent-delete" onclick="agDeleteAgent(\'' + a.id + '\')">🗑️</button>';
+        html += '</div>';
+        html += '<div class="ag-agent-details">';
+        html += '<span>🎯 ' + triggerDesc + '</span>';
+        html += '<span>⚡ ' + actionDesc + '</span>';
+        html += '<span>📊 Jalan: ' + (a.runCount || 0) + 'x</span>';
+        html += '</div>';
+        html += '<div class="ag-agent-actions">';
+        html += '<button class="ag-agent-action-btn" onclick="agTestRun(\'' + a.id + '\')">🧪 Test</button>';
+        html += '<button class="ag-agent-action-btn" onclick="agManualRun(\'' + a.id + '\')">▶️ Jalanin Sekarang</button>';
+        html += '</div>';
+        html += '</div>';
+    }
+    list.innerHTML = html;
+}
+
+function agDescribeTrigger(t) {
+    if (t.type === 'time') return '⏰ Tiap hari jam ' + t.time;
+    if (t.type === 'interval') return '⏱️ Tiap ' + t.minutes + ' menit';
+    if (t.type === 'weekday') {
+        var days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        return '📅 Tiap ' + days[t.weekday] + ' jam ' + t.time;
+    }
+    if (t.type === 'keyword') return '💬 Keyword: "' + t.keyword + '"';
+    if (t.type === 'once') return '🎯 ' + t.date + ' jam ' + t.time;
+    return t.type;
+}
+
+function agDescribeAction(a) {
+    if (a.type === 'notify') return '🔔 Notif: "' + (a.message || '').slice(0, 30) + '"';
+    if (a.type === 'chat') return '💬 AI: "' + (a.prompt || '').slice(0, 30) + '"';
+    if (a.type === 'note') return '📝 Note: "' + (a.title || '') + '"';
+    if (a.type === 'reminder') return '⏰ Reminder: "' + (a.message || '').slice(0, 30) + '"';
+    if (a.type === 'auto_message') return '💌 Auto: "' + (a.message || '').slice(0, 30) + '"';
+    if (a.type === 'custom') return '🧩 Custom JS';
+    return a.type;
+}
+
+/* ═══ TOGGLE / DELETE ═══ */
+function agToggleAgent(id) {
+    var a = agAgents.find(function(x) { return x.id === id; });
+    if (!a) return;
+    a.enabled = !a.enabled;
+    agSave();
+    
+    if (a.enabled) agStartAgent(a);
+    else agStopAgent(a);
+    
+    agRenderActive();
+    showToast(a.enabled ? '⚡ Agent ON' : '💤 Agent OFF');
+}
+
+function agDeleteAgent(id) {
+    if (!confirm('Hapus agent ini?')) return;
+    agStopAgent(agAgents.find(function(x) { return x.id === id; }));
+    agAgents = agAgents.filter(function(x) { return x.id !== id; });
+    agSave();
+    agRenderActive();
+    showToast('🗑️ Agent dihapus');
+}
+
+/* ═══ START / STOP ═══ */
+function agStartAgent(agent) {
+    agStopAgent(agent);
+    if (!agent.enabled) return;
+    
+    var trigger = agent.trigger;
+    
+    if (trigger.type === 'interval') {
+        agIntervals[agent.id] = setInterval(function() {
+            agExecute(agent.id);
+        }, trigger.minutes * 60 * 1000);
+    }
+    /* For time/weekday/once, we check every 30s */
+    if (trigger.type === 'time' || trigger.type === 'weekday' || trigger.type === 'once') {
+        agIntervals[agent.id] = setInterval(function() {
+            agCheckTimeTrigger(agent);
+        }, 30000); /* Check every 30s */
+    }
+}
+
+function agStopAgent(agent) {
+    if (!agent) return;
+    if (agIntervals[agent.id]) {
+        clearInterval(agIntervals[agent.id]);
+        delete agIntervals[agent.id];
+    }
+}
+
+function agCheckTimeTrigger(agent) {
+    if (!agent.enabled) return;
+    var trigger = agent.trigger;
+    var now = new Date();
+    var currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    var currentDate = now.toDateString();
+    
+    /* Once trigger */
+    if (trigger.type === 'once') {
+        var triggerDateTime = trigger.date + ' ' + trigger.time;
+        var nowDateTime = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + currentTime;
+        if (triggerDateTime === nowDateTime) {
+            agExecute(agent.id);
+            agent.enabled = false;
+            agSave();
+            agStopAgent(agent);
+        }
+        return;
+    }
+    
+    /* Time trigger */
+    if (trigger.type === 'time') {
+        if (trigger.time === currentTime && agLastRunTime[agent.id] !== currentDate + '_' + currentTime) {
+            agLastRunTime[agent.id] = currentDate + '_' + currentTime;
+            agExecute(agent.id);
+        }
+    }
+    
+    /* Weekday trigger */
+    if (trigger.type === 'weekday') {
+        if (now.getDay() === trigger.weekday && trigger.time === currentTime && agLastRunTime[agent.id] !== currentDate + '_' + currentTime) {
+            agLastRunTime[agent.id] = currentDate + '_' + currentTime;
+            agExecute(agent.id);
+        }
+    }
+}
+
+/* ═══ EXECUTE ═══ */
+function agExecute(agentId) {
+    var agent = agAgents.find(function(x) { return x.id === agentId; });
+    if (!agent || !agent.enabled) return;
+    agRunAction(agent);
+}
+
+function agRunAction(agent) {
+    var action = agent.action;
+    var result = 'OK';
+    
+    try {
+        if (action.type === 'notify') {
+            showToast('🔔 ' + agent.name + ': ' + action.message);
+            agSendBrowserNotification(agent.name, action.message);
+        } else if (action.type === 'chat') {
+            agSendToChat(agent, action.prompt);
+        } else if (action.type === 'note') {
+            var notes = localStorage.getItem('closiwer_notes') || '';
+            var newNote = '\n\n## ' + (action.title || agent.name) + '\n' + (action.message || '') + '\n_' + new Date().toLocaleString('id-ID') + '_';
+            localStorage.setItem('closiwer_notes', notes + newNote);
+            showToast('📝 Catatan dibuat: ' + action.title);
+        } else if (action.type === 'reminder') {
+            var tasks = JSON.parse(localStorage.getItem('closiwer_tasks') || '[]');
+            tasks.push({ text: '⏰ ' + action.message, done: false, created: Date.now() });
+            localStorage.setItem('closiwer_tasks', JSON.stringify(tasks));
+            showToast('⏰ Reminder ditambah ke Tasks');
+        } else if (action.type === 'auto_message') {
+            showToast('💌 Auto: ' + action.message);
+        } else if (action.type === 'custom') {
+            try {
+                new Function(action.code)();
+                result = 'Code executed';
+            } catch (e) {
+                result = 'Error: ' + e.message;
+            }
+        }
+        
+        agent.runCount = (agent.runCount || 0) + 1;
+        agSave();
+        agLog(agent.name, 'success', result);
+        agRenderActive();
+    } catch (e) {
+        console.error('[Agent] Error:', e);
+        agLog(agent.name, 'error', e.message);
+    }
+}
+
+function agSendToChat(agent, prompt) {
+    /* Add message to current chat */
+    var s = (typeof state !== 'undefined' && state.sessions) ? state.sessions.find(function(x) { return x.id === state.currentSessionId; }) : null;
+    if (s) {
+        s.messages.push({
+            role: 'assistant',
+            content: '🤖 **' + agent.name + '**: ' + prompt,
+            timestamp: Date.now()
+        });
+        if (typeof updateCurrentSession === 'function') updateCurrentSession(s.messages);
+        if (typeof renderMessages === 'function') renderMessages();
+    }
+    showToast('💬 AI Agent: ' + agent.name);
+}
+
+function agSendBrowserNotification(title, body) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+        try { new Notification(title, { body: body, icon: '/Ai-Closiwer/Dev.png' }); } catch(e) {}
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+}
+
+/* ═══ LOGS ═══ */
+function agLog(name, type, result) {
+    agLogs.unshift({
+        name: name,
+        type: type,
+        result: result,
+        timestamp: Date.now()
+    });
+    agLogs = agLogs.slice(0, 100);
+    agSave();
+}
+
+function agRenderLogs() {
+    var list = document.getElementById('agLogsList');
+    if (agLogs.length === 0) {
+        list.innerHTML = '<div class="ag-empty"><div class="ag-empty-icon">📋</div>Belum ada log.<br><br>Aktifin agent untuk lihat log di sini.</div>';
+        return;
+    }
+    var html = '';
+    for (var i = 0; i < agLogs.length; i++) {
+        var l = agLogs[i];
+        var time = new Date(l.timestamp).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+        html += '<div class="ag-log-item">';
+        html += '<div class="ag-log-header">';
+        html += '<div class="ag-log-name">' + escapeHtml(l.name) + '</div>';
+        html += '<div class="ag-log-time">' + time + '</div>';
+        html += '</div>';
+        html += '<div class="ag-log-result ' + l.type + '">' + (l.type === 'success' ? '✅' : '❌') + ' ' + escapeHtml(l.result) + '</div>';
+        html += '</div>';
+    }
+    list.innerHTML = html;
+}
+
+function agClearLogs() {
+    if (!confirm('Hapus semua log?')) return;
+    agLogs = [];
+    agSave();
+    agRenderLogs();
+    showToast('🗑️ Logs dihapus');
+}
+
+/* ═══ TEST RUN ═══ */
+function agTestRun(id) {
+    var a = agAgents.find(function(x) { return x.id === id; });
+    if (!a) return;
+    showToast('🧪 Test: ' + a.name);
+    agRunAction(a);
+}
+
+function agManualRun(id) {
+    var a = agAgents.find(function(x) { return x.id === id; });
+    if (!a) return;
+    showToast('▶️ Manual run: ' + a.name);
+    agRunAction(a);
+}
+
+/* ═══ PRESETS ═══ */
+var agPresets = [
+    { icon: '💧', name: 'Reminder Minum Air', desc: 'Ingetin minum air tiap 1 jam', trigger: { type: 'interval', minutes: 60 }, action: { type: 'notify', message: 'Jangan lupa minum air! 💧' } },
+    { icon: '📚', name: 'Reminder Belajar', desc: 'Ingetin belajar tiap jam 7 malam', trigger: { type: 'time', time: '19:00' }, action: { type: 'notify', message: 'Waktunya belajar! 📚' } },
+    { icon: '💪', name: 'Reminder Olahraga', desc: 'Reminder olahraga pagi', trigger: { type: 'time', time: '06:00' }, action: { type: 'notify', message: 'Waktunya olahraga pagi! 💪' } },
+    { icon: '📝', name: 'Jurnal Harian', desc: 'Auto-bikin jurnal tiap malam', trigger: { type: 'time', time: '22:00' }, action: { type: 'note', title: 'Jurnal Harian', message: 'Hari ini gimana?' } },
+    { icon: '🧘', name: 'Reminder Istirahat', desc: 'Ingetin istirahat tiap 2 jam', trigger: { type: 'interval', minutes: 120 }, action: { type: 'notify', message: 'Istirahat dulu 5 menit! 🧘' } },
+    { icon: '📧', name: 'Cek Email', desc: 'Reminder cek email pagi', trigger: { type: 'time', time: '09:00' }, action: { type: 'notify', message: 'Cek email penting! 📧' } },
+    { icon: '💊', name: 'Reminder Vitamin', desc: 'Reminder minum vitamin', trigger: { type: 'time', time: '08:00' }, action: { type: 'notify', message: 'Minum vitamin dulu! 💊' } },
+    { icon: '🌟', name: 'Quote Pagi', desc: 'AI bikin quote motivasi pagi', trigger: { type: 'time', time: '06:30' }, action: { type: 'chat', prompt: 'Bikin 1 quote motivasi pagi yang singkat' } }
+];
+
+function agRenderPresets() {
+    var grid = document.getElementById('agPresetsGrid');
+    var html = '';
+    for (var i = 0; i < agPresets.length; i++) {
+        var p = agPresets[i];
+        html += '<div class="ag-preset-card" onclick="agUsePreset(' + i + ')">';
+        html += '<div class="ag-preset-icon">' + p.icon + '</div>';
+        html += '<div class="ag-preset-name">' + escapeHtml(p.name) + '</div>';
+        html += '<div class="ag-preset-desc">' + escapeHtml(p.desc) + '</div>';
+        html += '</div>';
+    }
+    grid.innerHTML = html;
+}
+
+function agUsePreset(idx) {
+    var p = agPresets[idx];
+    var agent = {
+        id: 'agent_' + Date.now(),
+        name: p.name,
+        trigger: JSON.parse(JSON.stringify(p.trigger)),
+        action: JSON.parse(JSON.stringify(p.action)),
+        enabled: true,
+        createdAt: Date.now(),
+        runCount: 0
+    };
+    agAgents.push(agent);
+    agSave();
+    agStartAgent(agent);
+    showToast('✅ ' + p.name + ' aktif!');
+    agSetTab('active', document.querySelectorAll('.ag-tab')[1]);
+}
+
+/* ═══ KEYWORD TRIGGER (integrate with chat) ═══ */
+function agCheckKeywordTriggers(message) {
+    var lower = message.toLowerCase();
+    for (var i = 0; i < agAgents.length; i++) {
+        var a = agAgents[i];
+        if (a.enabled && a.trigger.type === 'keyword' && lower.indexOf(a.trigger.keyword) !== -1) {
+            agRunAction(a);
+        }
+    }
+}
+
+/* ═══ QUICK ACCESS ═══ */
+function openAgentMode() {
+    var modal = document.getElementById('agentModal');
+    if (modal) {
+        modal.classList.add('show');
+        agUpdateTriggerFields();
+        agUpdateActionFields();
+        agRenderActive();
+    }
+}
+
+/* ═══ AUTO-START ALL ENABLED AGENTS ═══ */
+setTimeout(function() {
+    for (var i = 0; i < agAgents.length; i++) {
+        if (agAgents[i].enabled) agStartAgent(agAgents[i]);
+    }
+    console.log('[Agent] ' + agAgents.length + ' agents loaded');
+}, 2000);
+
+console.log('🤖 FITUR v5.1: AI Agent Mode loaded!');
+/* ═══════════════════════════════════════
+   FITUR #8: AI WEBSITE BUILDER
+═══════════════════════════════════════ */
+
+var wbCurrentCode = { html: '', css: '', js: '' };
+var wbCurrentTab = 'html';
+var wbProjects = JSON.parse(localStorage.getItem('closiwer_webprojects') || '[]');
+var wbCurrentDevice = 'desktop';
+
+function wbSetTab(tab, el) {
+    document.querySelectorAll('.wb-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.wb-content').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    var content = document.querySelector('.wb-content[data-wb-tab="' + tab + '"]');
+    if (content) content.classList.add('active');
+    
+    if (tab === 'templates') wbRenderTemplates();
+    if (tab === 'projects') wbRenderProjects();
+}
+
+function wbSetColor(color) {
+    document.getElementById('wbColor').value = color;
+}
+
+function wbSetDevice(device, el) {
+    wbCurrentDevice = device;
+    document.querySelectorAll('.wb-device-btn').forEach(function(b) { b.classList.remove('active'); });
+    el.classList.add('active');
+    var frame = document.getElementById('wbDeviceFrame');
+    frame.className = 'wb-device-frame ' + device;
+}
+
+function wbSetCodeTab(tab, el) {
+    wbCurrentTab = tab;
+    document.querySelectorAll('.wb-code-tab').forEach(function(t) { t.classList.remove('active'); });
+    el.classList.add('active');
+    document.getElementById('wbCodeEditor').value = wbCurrentCode[tab] || '';
+}
+
+function wbRefreshPreview() {
+    /* Update current code from editor */
+    wbCurrentCode[wbCurrentTab] = document.getElementById('wbCodeEditor').value;
+    wbUpdatePreview();
+}
+
+function wbUpdatePreview() {
+    var html = wbCurrentCode.html || '';
+    var css = wbCurrentCode.css || '';
+    var js = wbCurrentCode.js || '';
+    
+    /* Check if html already complete */
+    var fullDoc;
+    if (html.match(/<!DOCTYPE|<html/i)) {
+        fullDoc = html;
+        /* Inject css & js if not present */
+        if (css && html.indexOf('</head>') !== -1) {
+            fullDoc = fullDoc.replace('</head>', '<style>' + css + '</style></head>');
+        }
+        if (js && html.indexOf('</body>') !== -1) {
+            fullDoc = fullDoc.replace('</body>', '<script>' + js + '<\/script></body>');
+        }
+    } else {
+        fullDoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>' + css + '</style></head><body>' + html + '<script>' + js + '<\/script></body></html>';
+    }
+    
+    var iframe = document.getElementById('wbPreviewFrame');
+    if (iframe) {
+        iframe.srcdoc = fullDoc;
+    }
+}
+
+/* ═══ GENERATE ═══ */
+function wbGenerate() {
+    var desc = document.getElementById('wbDesc').value.trim();
+    if (!desc) { showToast('⚠️ Isi deskripsi dulu'); return; }
+    
+    var style = document.getElementById('wbStyle').value;
+    var type = document.getElementById('wbType').value;
+    var color = document.getElementById('wbColor').value;
+    
+    document.getElementById('wbPreviewWrap').style.display = 'block';
+    document.getElementById('wbPreviewFrame').srcdoc = '<html><body style="background: #0a0a0f; color: #f5f4ef; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;"><div style="text-align: center;"><div style="width: 40px; height: 40px; border: 3px solid #333; border-top-color: ' + color + '; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div><div>AI generating website... 🤖</div><style>@keyframes spin { to { transform: rotate(360deg); } }</style></div></body></html>';
+    
+    var apiKey = (typeof config !== 'undefined' && config.apiKey) ? config.apiKey : '';
+    
+    if (!apiKey || apiKey.length < 10) {
+        setTimeout(function() {
+            var template = wbGenerateTemplate(desc, style, type, color);
+            wbCurrentCode = template;
+            document.getElementById('wbCodeEditor').value = template.html;
+            wbUpdatePreview();
+            showToast('💡 Demo template — isi API key untuk AI generate');
+        }, 1500);
+        return;
+    }
+    
+    var prompt = 'Bikin website ' + type + ' dengan deskripsi: "' + desc + '"\n\n' +
+        'Persyaratan:\n' +
+        '- Style: ' + style + '\n' +
+        '- Warna utama: ' + color + '\n' +
+        '- Single HTML file dengan CSS inline di <style> dan JS di <script>\n' +
+        '- Modern, responsive, ready to use\n' +
+        '- Bahasa Indonesia\n' +
+        '- Include: navbar, hero section, features/content, footer\n\n' +
+        'Jawab dengan JSON valid:\n' +
+        '{"html": "kode HTML lengkap dengan inline CSS dan JS di dalam <!DOCTYPE html>", "explanation": "penjelasan singkat"}';
+    
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+            model: config.model || 'llama-3.1-8b-instant',
+            messages: [
+                { role: 'system', content: 'Kamu web developer expert. Buat single-file HTML dengan inline CSS+JS. Jawab dengan JSON valid.' },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 4000,
+            response_format: { type: 'json_object' }
+        })
+    })
+    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+    .then(function(data) {
+        var content = data.choices[0].message.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        var parsed = JSON.parse(content);
+        var fullHtml = parsed.html || '';
+        
+        /* Split into parts */
+        var cssMatch = fullHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+        var jsMatch = fullHtml.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+        var bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        
+        wbCurrentCode = {
+            html: fullHtml,
+            css: cssMatch ? cssMatch[1].trim() : '',
+            js: jsMatch ? jsMatch[1].trim() : ''
+        };
+        
+        document.getElementById('wbCodeEditor').value = fullHtml;
+        wbCurrentTab = 'html';
+        document.querySelectorAll('.wb-code-tab').forEach(function(t, i) { if (i === 0) t.classList.add('active'); else t.classList.remove('active'); });
+        wbUpdatePreview();
+        showToast('✅ Website generated!');
+    })
+    .catch(function(err) {
+        console.error('[WebsiteBuilder]', err);
+        var template = wbGenerateTemplate(desc, style, type, color);
+        wbCurrentCode = template;
+        document.getElementById('wbCodeEditor').value = template.html;
+        wbUpdatePreview();
+        showToast('⚠️ AI gagal, pakai demo template');
+    });
+}
+
+/* ═══ TEMPLATE GENERATOR (Fallback) ═══ */
+function wbGenerateTemplate(desc, style, type, color) {
+    var bg, text, card;
+    if (style === 'dark') { bg = '#0a0a0f'; text = '#f5f4ef'; card = '#1a1a24'; }
+    else if (style === 'minimal') { bg = '#ffffff'; text = '#1a1a24'; card = '#f5f5f7'; }
+    else if (style === 'playful') { bg = '#fef3c7'; text = '#1a1a24'; card = '#ffffff'; }
+    else if (style === 'corporate') { bg = '#f8fafc'; text = '#0f172a'; card = '#ffffff'; }
+    else { bg = '#ffffff'; text = '#1a1a24'; card = '#f5f5f7'; }
+    
+    var gradient = 'linear-gradient(135deg, ' + color + ', ' + wbDarken(color, 30) + ')';
+    
+    var html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(desc.slice(0, 40))}</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, 'Segoe UI', sans-serif; }
+body { background: ${bg}; color: ${text}; line-height: 1.6; }
+.navbar { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(128,128,128,0.2); }
+.logo { font-size: 22px; font-weight: 800; background: ${gradient}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.nav-links { display: flex; gap: 24px; }
+.nav-links a { color: ${text}; text-decoration: none; font-size: 14px; font-weight: 600; opacity: 0.8; }
+.nav-links a:hover { opacity: 1; color: ${color}; }
+.hero { padding: 80px 40px; text-align: center; background: ${gradient}; color: white; }
+.hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
+.hero p { font-size: 18px; opacity: 0.95; max-width: 600px; margin: 0 auto 30px; }
+.btn { display: inline-block; padding: 14px 32px; background: white; color: ${color}; text-decoration: none; border-radius: 12px; font-weight: 700; transition: all 0.2s; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.section { padding: 80px 40px; max-width: 1200px; margin: 0 auto; }
+.section-title { font-size: 32px; font-weight: 800; text-align: center; margin-bottom: 16px; }
+.section-sub { text-align: center; color: ${text}; opacity: 0.6; margin-bottom: 48px; }
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.feature { padding: 32px; background: ${card}; border-radius: 16px; text-align: center; transition: all 0.3s; }
+.feature:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+.feature-icon { font-size: 48px; margin-bottom: 16px; }
+.feature h3 { font-size: 20px; margin-bottom: 8px; }
+.feature p { opacity: 0.7; font-size: 14px; }
+.footer { padding: 40px; text-align: center; border-top: 1px solid rgba(128,128,128,0.2); opacity: 0.6; font-size: 14px; }
+@media (max-width: 768px) {
+.hero h1 { font-size: 32px; }
+.navbar { padding: 16px 20px; }
+.nav-links { display: none; }
+.features { grid-template-columns: 1fr; }
+.section { padding: 40px 20px; }
+}
+</style>
+</head>
+<body>
+<nav class="navbar">
+<div class="logo">${escapeHtml(desc.slice(0, 20))}</div>
+<div class="nav-links">
+<a href="#">Home</a>
+<a href="#">About</a>
+<a href="#">Contact</a>
+</div>
+</nav>
+<section class="hero">
+<h1>${escapeHtml(desc.slice(0, 60))}</h1>
+<p>Website ini dibuat dengan CLOSIWER AI Website Builder. Tinggal customize sesuai kebutuhan lu!</p>
+<a href="#" class="btn">Mulai Sekarang →</a>
+</section>
+<section class="section">
+<h2 class="section-title">Fitur Unggulan</h2>
+<p class="section-sub">Kenapa pilih kami?</p>
+<div class="features">
+<div class="feature"><div class="feature-icon">⚡</div><h3>Cepat</h3><p>Performa tinggi dan responsif di semua device</p></div>
+<div class="feature"><div class="feature-icon">🎨</div><h3>Modern</h3><p>Design kekinian dengan animasi halus</p></div>
+<div class="feature"><div class="feature-icon">🔒</div><h3>Aman</h3><p>Keamanan terjamin dan terpercaya</p></div>
+</div>
+</section>
+<footer class="footer">
+<p>© 2026 ${escapeHtml(desc.slice(0, 20))} — Generated by CLOSIWER AI</p>
+</footer>
+<script>
+console.log('Website loaded!');
+document.querySelectorAll('a[href="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) { e.preventDefault(); });
+});
+<\/script>
+</body>
+</html>`;
+    
+    var cssMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    var jsMatch = html.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+    
+    return {
+        html: html,
+        css: cssMatch ? cssMatch[1].trim() : '',
+        js: jsMatch ? jsMatch[1].trim() : ''
+    };
+}
+
+function wbDarken(hex, percent) {
+    var rgb = hex.replace('#', '');
+    if (rgb.length === 3) rgb = rgb.split('').map(function(c) { return c + c; }).join('');
+    var r = Math.max(0, Math.floor(parseInt(rgb.substring(0, 2), 16) * (1 - percent / 100)));
+    var g = Math.max(0, Math.floor(parseInt(rgb.substring(2, 4), 16) * (1 - percent / 100)));
+    var b = Math.max(0, Math.floor(parseInt(rgb.substring(4, 6), 16) * (1 - percent / 100)));
+    return '#' + [r, g, b].map(function(x) { var h = x.toString(16); return h.length === 1 ? '0' + h : h; }).join('');
+}
+
+/* ═══ FULLSCREEN / EXPORT / COPY ═══ */
+function wbViewFullscreen() {
+    wbCurrentCode[wbCurrentTab] = document.getElementById('wbCodeEditor').value;
+    var html = wbCurrentCode.html || '';
+    if (!html.match(/<!DOCTYPE|<html/i)) {
+        html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + (wbCurrentCode.css || '') + '</style></head><body>' + html + '<script>' + (wbCurrentCode.js || '') + '<\/script></body></html>';
+    }
+    var w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+}
+
+function wbExportHTML() {
+    wbCurrentCode[wbCurrentTab] = document.getElementById('wbCodeEditor').value;
+    var html = wbCurrentCode.html || '';
+    if (!html.match(/<!DOCTYPE|<html/i)) {
+        html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + (wbCurrentCode.css || '') + '</style></head><body>' + html + '<script>' + (wbCurrentCode.js || '') + '<\/script></body></html>';
+    }
+    var blob = new Blob([html], { type: 'text/html' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'website-' + Date.now() + '.html';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📥 Website di-export!');
+}
+
+function wbCopyCode() {
+    wbCurrentCode[wbCurrentTab] = document.getElementById('wbCodeEditor').value;
+    var html = wbCurrentCode.html || '';
+    if (!html.match(/<!DOCTYPE|<html/i)) {
+        html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + (wbCurrentCode.css || '') + '</style></head><body>' + html + '<script>' + (wbCurrentCode.js || '') + '<\/script></body></html>';
+    }
+    copyToClipboard(html, 'Kode website disalin!');
+}
+
+function wbSaveProject() {
+    wbCurrentCode[wbCurrentTab] = document.getElementById('wbCodeEditor').value;
+    var desc = document.getElementById('wbDesc').value.trim() || 'Untitled Project';
+    
+    var project = {
+        id: 'wb_' + Date.now(),
+        name: desc.slice(0, 40),
+        code: JSON.parse(JSON.stringify(wbCurrentCode)),
+        createdAt: Date.now()
+    };
+    wbProjects.unshift(project);
+    wbProjects = wbProjects.slice(0, 20);
+    localStorage.setItem('closiwer_webprojects', JSON.stringify(wbProjects));
+    showToast('💾 Project saved!');
+    wbRenderProjects();
+}
+
+/* ═══ TEMPLATES ═══ */
+var wbTemplates = [
+    { icon: '🚀', name: 'Landing Page', desc: 'Landing page modern untuk startup', prompt: 'Website landing page untuk startup teknologi', style: 'modern', type: 'landing' },
+    { icon: '💼', name: 'Portfolio', desc: 'Portfolio personal untuk freelancer', prompt: 'Website portfolio untuk designer grafis dengan galeri karya', style: 'minimal', type: 'portfolio' },
+    { icon: '📝', name: 'Blog', desc: 'Blog pribadi dengan artikel', prompt: 'Blog pribadi tentang traveling dan lifestyle', style: 'modern', type: 'blog' },
+    { icon: '🍽️', name: 'Restaurant', desc: 'Website restoran dengan menu', prompt: 'Website restoran Indonesia dengan menu dan reservasi', style: 'dark', type: 'restaurant' },
+    { icon: '🏢', name: 'Business', desc: 'Website perusahaan profesional', prompt: 'Website perusahaan konsultan bisnis', style: 'corporate', type: 'business' },
+    { icon: '🎉', name: 'Event', desc: 'Landing page event & conference', prompt: 'Website event tech conference 2026', style: 'playful', type: 'event' },
+    { icon: '🎓', name: 'School', desc: 'Website sekolah/les', prompt: 'Website lembaga kursus bahasa Inggris', style: 'modern', type: 'school' },
+    { icon: '📦', name: 'Product', desc: 'Product showcase page', prompt: 'Website product launch untuk gadget terbaru', style: 'glassmorphism', type: 'product' }
+];
+
+function wbRenderTemplates() {
+    var grid = document.getElementById('wbTemplatesGrid');
+    var html = '';
+    for (var i = 0; i < wbTemplates.length; i++) {
+        var t = wbTemplates[i];
+        html += '<div class="wb-template-card" onclick="wbUseTemplate(' + i + ')">';
+        html += '<div class="wb-template-icon">' + t.icon + '</div>';
+        html += '<div class="wb-template-name">' + escapeHtml(t.name) + '</div>';
+        html += '<div class="wb-template-desc">' + escapeHtml(t.desc) + '</div>';
+        html += '</div>';
+    }
+    grid.innerHTML = html;
+}
+
+function wbUseTemplate(idx) {
+    var t = wbTemplates[idx];
+    document.getElementById('wbDesc').value = t.prompt;
+    document.getElementById('wbStyle').value = t.style;
+    document.getElementById('wbType').value = t.type;
+    wbSetTab('generate', document.querySelectorAll('.wb-tab')[0]);
+    setTimeout(wbGenerate, 200);
+}
+
+/* ═══ PROJECTS ═══ */
+function wbRenderProjects() {
+    var list = document.getElementById('wbProjectsList');
+    if (wbProjects.length === 0) {
+        list.innerHTML = '<div class="ag-empty"><div class="ag-empty-icon">💾</div>Belum ada project.<br><br>Generate website dulu, terus klik 💾 Save!</div>';
+        return;
+    }
+    var html = '';
+    for (var i = 0; i < wbProjects.length; i++) {
+        var p = wbProjects[i];
+        var date = new Date(p.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        html += '<div class="wb-project-item">';
+        html += '<div class="wb-project-icon">🌐</div>';
+        html += '<div class="wb-project-info" onclick="wbLoadProject(' + i + ')">';
+        html += '<div class="wb-project-name">' + escapeHtml(p.name) + '</div>';
+        html += '<div class="wb-project-meta">' + date + ' · ' + (p.code.html || '').length + ' chars</div>';
+        html += '</div>';
+        html += '<button class="wb-project-delete" onclick="wbDeleteProject(' + i + ')">🗑️</button>';
+        html += '</div>';
+    }
+    list.innerHTML = html;
+}
+
+function wbLoadProject(idx) {
+    var p = wbProjects[idx];
+    if (!p) return;
+    wbCurrentCode = JSON.parse(JSON.stringify(p.code));
+    document.getElementById('wbDesc').value = p.name;
+    document.getElementById('wbPreviewWrap').style.display = 'block';
+    document.getElementById('wbCodeEditor').value = wbCurrentCode[wbCurrentTab] || wbCurrentCode.html || '';
+    wbSetTab('generate', document.querySelectorAll('.wb-tab')[0]);
+    wbUpdatePreview();
+    showToast('📂 Project loaded: ' + p.name);
+}
+
+function wbDeleteProject(idx) {
+    if (!confirm('Hapus project ini?')) return;
+    wbProjects.splice(idx, 1);
+    localStorage.setItem('closiwer_webprojects', JSON.stringify(wbProjects));
+    wbRenderProjects();
+    showToast('🗑️ Project dihapus');
+}
+
+function wbClearProjects() {
+    if (!confirm('Hapus SEMUA project?')) return;
+    wbProjects = [];
+    localStorage.removeItem('closiwer_webprojects');
+    wbRenderProjects();
+    showToast('🗑️ Semua project dihapus');
+}
+
+/* ═══ QUICK ACCESS ═══ */
+function openWebsiteBuilder() {
+    var modal = document.getElementById('webBuilderModal');
+    if (modal) {
+        modal.classList.add('show');
+        wbRenderTemplates();
+        wbRenderProjects();
+    }
+}
+
+console.log('🌐 FITUR v5.1: Website Builder loaded!');
