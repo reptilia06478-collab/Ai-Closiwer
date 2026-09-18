@@ -1763,3 +1763,31 @@ body[data-bg-mode="matrix"] .bg-matrix { opacity: 0.8; }
     .gmem-card, .gmem-card .card-front { font-size: 24px; }
     .gtris-board { max-width: 220px; }
                 }
+
+/* ═══ PERFORMANCE OPTIMIZATION v6.0 ═══ */
+
+/* Force GPU acceleration */
+.orb, .particle, .cinematic-loader, .loader-canvas, .morph-logo, .logo-halo, .logo-trail {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .cinematic-loader { display: none !important; }
+    .app-container { opacity: 1 !important; }
+}
+
+/* Content visibility */
+.panel, .modal { content-visibility: auto; contain-intrinsic-size: 500px; }
+
+/* Mobile performance */
+@media (max-width: 640px) {
+    .chat-area { scroll-behavior: auto; }
+}
