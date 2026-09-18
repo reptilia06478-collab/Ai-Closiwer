@@ -145,6 +145,7 @@ function runLoader() {
 
 // ═══ INIT ═══
 function init() {
+    runLoader();           
     setGreeting();
     loadHistory();
     updateModelName();
@@ -154,10 +155,8 @@ function init() {
     startUptimeCounter();
     updateStats();
     initParticles();
-    runLoader();
     updateTokenCount();
 }
-
 // ═══ START APPLICATION ═══
 init();
     
