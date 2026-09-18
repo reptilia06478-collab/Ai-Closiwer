@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>CLOSIWER AI v5.0 — by PANN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-bg-mode="png">
+    <!-- ═══ BACKGROUND ═══ -->
+    <div id="bg">
+        <div class="bg-png"></div>
+        <div class="bg-gradient"></div>
+        <canvas id="matrixCanvas" class="bg-matrix"></canvas>
+        <div class="bg-overlay"></div>
+        <div class="bg-grid"></div>
+        <canvas id="particleCanvas"></canvas>
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+        <div class="orb orb3"></div>
+        <div class="bg-scanlines"></div>
+    </div>
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">💬 SESSIONS</div>
+            <button class="new-chat-btn" onclick="newSession()">+ Chat Baru</button>
+        </div>
+        <div class="session-list" id="sessionList"></div>
+        <div class="sidebar-footer">
+            Developed by <span class="pann-name">PANN</span>
+        </div>
+    </aside>
+
+    <!-- ═══ APP ═══ -->
+    <div id="app">
+        <!-- HEADER -->
+        <header class="header">
+            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+            <div class="logo">
+                <div class="logo-icon">✦</div>
+                <div>
+                    <div class="logo-text">CLOSIWER</div>
+                    <div class="credit-badge">by <span class="pann-name">PANN</span> · v5.0</div>
+                </div>
+            </div>
+            <div class="status"><div class="status-dot"></div><span id="statusText">READY</span></div>
+            <button class="icon-btn" onclick="openCommandPalette()" title="Command Palette">⌘</button>
+            <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+            <button class="icon-btn" onclick="openSettings()">⚙️</button>
+            <button class="dev-btn" onclick="openDev()">DEV</button>
+        </header>
+
+        <!-- TOOLBAR -->
+        <nav class="toolbar">
+            <button class="tool-chip active" onclick="setTool('chat', this)">💬 Chat</button>
+            <button class="tool-chip" onclick="setTool('image', this)">🖼️ Gambar</button>
+            <button class="tool-chip" onclick="setTool('search', this)">🌐 Search</button>
+            <button class="tool-chip" onclick="setTool('chart', this)">📊 Chart</button>
+            <button class="tool-chip" onclick="setTool('playground', this)">🎮 Playground</button>
+            <button class="tool-chip" onclick="setTool('music', this)">🎵 Music</button>
+            <button class="tool-chip" onclick="setTool('notes', this)">📝 Notes</button>
+            <button class="tool-chip" onclick="setTool('tasks', this)">✅ Tasks</button>
+            <button class="tool-chip" onclick="setTool('calendar', this)">📅 Calendar</button>
+            <button class="tool-chip" onclick="setTool('games', this)">🎮 Games</button>
+            <button class="tool-chip" onclick="setTool('stats', this)">📊 Stats</button>
+        </nav>
+
+        <!-- CHAT AREA -->
+        <main class="chat-area" id="chatArea">
+            <div class="welcome" id="welcome">
+                <div class="welcome-hero">
+                    <div class="hero-ring"></div>
+                    <div class="hero-ring"></div>
+                    <div class="hero-ring"></div>
+                    <div class="welcome-logo">✦</div>
+                </div>
+                <h1>CLOSIWER AI v5.0</h1>
+                <div class="welcome-credit">Developed with ❤️ by <span class="pann-name">PANN</span></div>
+                <p class="subtitle">AI super lengkap: chat, gambar, musik, notes, tasks, games, dan banyak lagi!</p>
+                <div class="badge-row">
+                    <span class="badge hot">🔥 v5.0</span>
+                    <span class="badge">100% Gratis</span>
+                    <span class="badge">∞ Unlimited</span>
+                    <span class="badge">🎵 Music</span>
+                    <span class="badge">📝 Notes</span>
+                    <span class="badge">✅ Tasks</span>
+                    <span class="badge">🎮 Games</span>
+                </div>
+                <div class="suggestions">
+                    <button class="suggestion" onclick="quickAsk('Buatkan REST API Node.js dengan JWT auth')"><span class="emoji">💻</span>REST API Node.js + JWT</button>
+                    <button class="suggestion" onclick="quickAsk('Selesaikan integral 2x^3 + 3x^2 - 5x + 7 dx')"><span class="emoji">📐</span>Integral step-by-step</button>
+                    <button class="suggestion" onclick="setTool('image', document.querySelectorAll('.tool-chip')[1]); quickAsk('kucing lucu pakai topi')"><span class="emoji">🖼️</span>Generate gambar</button>
+                    <button class="suggestion" onclick="setTool('music', document.querySelectorAll('.tool-chip')[5]); quickAsk('play')"><span class="emoji">🎵</span>Buka Music Player</button>
+                    <button class="suggestion" onclick="setTool('notes', document.querySelectorAll('.tool-chip')[6]); quickAsk('')"><span class="emoji">📝</span>Buka Notes</button>
+                    <button class="suggestion" onclick="setTool('tasks', document.querySelectorAll('.tool-chip')[7]); quickAsk('')"><span class="emoji">✅</span>Buka Task Manager</button>
+                </div>
+            </div>
+            <div id="messages"></div>
+            <div id="panelContainer"></div>
+        </main>
+
+        <!-- UPLOAD PREVIEW -->
+        <div class="upload-preview" id="uploadPreview">
+            <span>📎</span>
+            <span class="file-name" id="fileName"></span>
+            <button class="remove-file" onclick="removeFile()">×</button>
+        </div>
+
+        <!-- INPUT AREA -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <button class="action-btn" onclick="triggerUpload()" title="Upload">📎</button>
+                <input type="file" id="fileInput" style="display:none" onchange="handleFile(event)">
+                <textarea id="input" rows="1" placeholder="Tanya apa saja..." oninput="onInput()"></textarea>
+                <button class="action-btn" id="micBtn" onclick="toggleVoice()" title="Voice">🎤</button>
+                <button class="send-btn" id="sendBtn" onclick="handleSendClick()" disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-footer">⚡ CLOSIWER AI v5.0 · Built by <span class="pann-name">PANN</span></div>
+        </div>
+    </div>
+
+    <!-- ═══ MODALS ═══ -->
+    <div class="modal" id="devModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>⚙ DEV SETTINGS</h3>
+                <button class="modal-close" onclick="closeModal('devModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-box">
+                    <strong>🎁 100% GRATIS!</strong><br>
+                    API Key GRATIS di <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>
+                </div>
+                <div class="field">
+                    <label>Provider</label>
+                    <select id="provider">
+                        <option value="groq">Groq (GRATIS - Cepat)</option>
+                        <option value="openai">OpenAI</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>API Key</label>
+                    <input type="password" id="apiKey" placeholder="gsk_...">
+                </div>
+                <div class="field">
+                    <label>Model</label>
+                    <input type="text" id="model" placeholder="llama-3.1-8b-instant">
+                </div>
+                <button class="save-btn" onclick="saveConfig()">💾 Simpan</button>
+                <div class="status-box" id="statusBox">Status: Belum dikonfigurasi</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="settingsModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>⚙ PENGATURAN</h3>
+                <button class="modal-close" onclick="closeModal('settingsModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="field">
+                    <label>🎨 Warna Tema</label>
+                    <div class="color-options">
+                        <div class="color-opt ember active" onclick="setColor('ember', this)">🔥<br>Ember</div>
+                        <div class="color-opt ocean" onclick="setColor('ocean', this)">🌊<br>Ocean</div>
+                        <div class="color-opt forest" onclick="setColor('forest', this)">🌲<br>Forest</div>
+                        <div class="color-opt royal" onclick="setColor('royal', this)">👑<br>Royal</div>
+                        <div class="color-opt cyber" onclick="setColor('cyber', this)">💗<br>Cyber</div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>🖼️ Mode Background</label>
+                    <div class="bg-mode-options">
+                        <div class="bg-mode-opt active" onclick="setBgMode('png', this)">📷 PNG</div>
+                        <div class="bg-mode-opt" onclick="setBgMode('gradient', this)">🌈 Gradient</div>
+                        <div class="bg-mode-opt" onclick="setBgMode('matrix', this)">🟢 Matrix</div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>🎭 Personality AI</label>
+                    <select id="personalitySelect" onchange="setPersonality(this.value)">
+                        <option value="default">🎯 Default</option>
+                        <option value="coder">💻 Coder</option>
+                        <option value="teacher">📚 Teacher</option>
+                        <option value="creative">🎨 Creative</option>
+                        <option value="math">📐 Math Expert</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>🌐 Bahasa</label>
+                    <select id="langSelect" onchange="setLanguage(this.value)">
+                        <option value="id">🇮🇩 Indonesia</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="jp">🇯🇵 日本語</option>
+                    </select>
+                </div>
+                <button class="save-btn" onclick="exportChat()">📥 Export Semua Chat</button>
+                <button class="save-btn" style="background: linear-gradient(135deg, #f87171, #dc2626);" onclick="clearAllSessions()">🗑️ Hapus Semua Sesi</button>
+                <div class="info-box" style="margin-top: 12px; text-align: center;">
+                    <strong>CLOSIWER AI v5.0</strong><br>
+                    Developed by <span class="pann-name">PANN</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMMAND PALETTE -->
+    <div class="modal" id="commandModal">
+        <div class="modal-box command-palette">
+            <input type="text" id="commandInput" class="command-input" placeholder="Ketik perintah... (contoh: /music, /notes, /theme)" oninput="filterCommands(this.value)">
+            <div class="command-list" id="commandList"></div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <!-- FOOTER CREDIT -->
+    <div class="dev-credit">Made with ❤️ · <span class="pann-name">PANN</span> · v5.0</div>
+
+    <script src="script.js"></script>
+</body>
+              </html>
