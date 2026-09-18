@@ -9,6 +9,120 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body data-bg-mode="png">
+    <!-- ═══════ CLOSIWER CINEMATIC LOADER v3.0 ═══════ -->
+<div class="cinematic-loader" id="closiwerLoader">
+    <!-- Particle Canvas -->
+    <canvas class="loader-canvas" id="loaderCanvas"></canvas>
+    
+    <!-- Shockwave Rings -->
+    <div class="shockwave-ring sw-1"></div>
+    <div class="shockwave-ring sw-2"></div>
+    <div class="shockwave-ring sw-3"></div>
+    
+    <!-- Morphing Logo -->
+    <div class="logo-stage" id="logoStage">
+        <div class="logo-halo"></div>
+        <div class="logo-trail"></div>
+        <div class="morph-logo">
+            <svg viewBox="0 0 100 100" fill="none" id="morphSvg">
+                <defs>
+                    <linearGradient id="morphGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ff8c5a"/>
+                        <stop offset="50%" stop-color="#d97757"/>
+                        <stop offset="100%" stop-color="#a85433"/>
+                    </linearGradient>
+                    <linearGradient id="morphGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#38bdf8"/>
+                        <stop offset="100%" stop-color="#8b5cf6"/>
+                    </linearGradient>
+                    <linearGradient id="morphGrad3" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#ec4899"/>
+                        <stop offset="100%" stop-color="#f59e0b"/>
+                    </linearGradient>
+                </defs>
+                <path id="morphPath" 
+                    d="M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z" 
+                    stroke="url(#morphGrad1)" 
+                    stroke-width="3" 
+                    fill="none" 
+                    stroke-linecap="round" 
+                    stroke-linejoin="round"/>
+                <circle id="morphCircle" cx="50" cy="50" r="7" fill="url(#morphGrad1)"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Brand Text (Typing Effect) -->
+    <div class="brand-text-stage">
+        <div class="brand-cinematic" id="brandText"></div>
+        <div class="brand-sub-cinematic" id="brandSub"></div>
+    </div>
+
+    <!-- Terminal Log -->
+    <div class="terminal-log" id="terminalLog">
+        <div class="terminal-header">
+            <span class="terminal-dot dot-red"></span>
+            <span class="terminal-dot dot-yellow"></span>
+            <span class="terminal-dot dot-green"></span>
+            <span class="terminal-title">closiwer-init.sh</span>
+        </div>
+        <div class="terminal-body" id="terminalBody"></div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-stage">
+        <div class="progress-bar-cinematic">
+            <div class="progress-fill-cinematic" id="progressFill">
+                <div class="progress-shine"></div>
+            </div>
+            <div class="progress-sparkles" id="progressSparkles"></div>
+        </div>
+        <div class="progress-info">
+            <span class="progress-label">Loading System</span>
+            <span class="progress-pct" id="progressPct">0%</span>
+        </div>
+    </div>
+
+    <!-- Feature Chips -->
+    <div class="feature-chips-cinematic" id="featureChips">
+        <span class="chip-cine" data-feature="chat">💬 Chat</span>
+        <span class="chip-cine" data-feature="image">🎨 Image</span>
+        <span class="chip-cine" data-feature="finance">💰 Finance</span>
+        <span class="chip-cine" data-feature="study">📚 Study</span>
+        <span class="chip-cine" data-feature="web">🌐 Web</span>
+        <span class="chip-cine" data-feature="agent">🤖 Agent</span>
+    </div>
+
+    <!-- Skip Button -->
+    <button class="skip-btn-cinematic" id="loaderSkip" onclick="skipLoader()">
+        <span>SKIP</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="13 17 18 12 13 7"></polyline>
+            <polyline points="6 17 11 12 6 7"></polyline>
+        </svg>
+    </button>
+
+    <!-- Corner Decorations -->
+    <div class="corner-deco corner-tl"></div>
+    <div class="corner-deco corner-tr"></div>
+    <div class="corner-deco corner-bl"></div>
+    <div class="corner-deco corner-br"></div>
+
+    <!-- Wave Animation -->
+    <div class="wave-container">
+        <div class="wave wave-1"></div>
+        <div class="wave wave-2"></div>
+        <div class="wave wave-3"></div>
+    </div>
+
+    <!-- Bottom Credit -->
+    <div class="loader-credit-cinematic">
+        <span class="credit-line"></span>
+        <span>POWERED BY <span class="pann-name">PANN</span></span>
+        <span class="credit-line"></span>
+    </div>
+        </div>
+    
     <!-- ═══ BACKGROUND ═══ -->
     <div id="bg">
         <div class="bg-png"></div>
