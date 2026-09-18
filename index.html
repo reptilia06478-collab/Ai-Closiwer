@@ -128,6 +128,146 @@
         </div>
     </div>
 
+    <!-- ═══ COLOR PALETTE PANEL ═══ -->
+<div class="modal" id="colorPaletteModal">
+    <div class="modal-box" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>🎨 COLOR PALETTE GENERATOR</h3>
+            <button class="modal-close" onclick="closeModal('colorPaletteModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <!-- Tabs -->
+            <div class="cp-tabs">
+                <button class="cp-tab active" onclick="cpSetTab('text', this)">📝 Text</button>
+                <button class="cp-tab" onclick="cpSetTab('image', this)">🖼️ Image</button>
+                <button class="cp-tab" onclick="cpSetTab('base', this)">🎯 Base Color</button>
+            </div>
+
+            <!-- Text Tab -->
+            <div class="cp-content active" data-tab="text">
+                <div class="field">
+                    <label>Deskripsi Warna</label>
+                    <input type="text" id="cpTextInput" placeholder="contoh: sunset di pantai bali, cyberpunk neon, forest morning...">
+                </div>
+                <button class="save-btn" onclick="cpFromText()">✨ Generate Palette</button>
+            </div>
+
+            <!-- Image Tab -->
+            <div class="cp-content" data-tab="image">
+                <div class="field">
+                    <label>Upload Gambar</label>
+                    <input type="file" id="cpImageInput" accept="image/*" onchange="cpFromImage(event)">
+                </div>
+                <div class="cp-preview-wrap" id="cpImagePreview"></div>
+            </div>
+
+            <!-- Base Color Tab -->
+            <div class="cp-content" data-tab="base">
+                <div class="field">
+                    <label>Warna Dasar</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="color" id="cpBaseColor" value="#d97757" style="width: 60px; height: 44px; padding: 4px; cursor: pointer;">
+                        <input type="text" id="cpBaseHex" value="#d97757" placeholder="#d97757" style="flex: 1;" oninput="document.getElementById('cpBaseColor').value = this.value">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Harmony Type</label>
+                    <select id="cpHarmony">
+                        <option value="monochromatic">Monochromatic (Satu warna)</option>
+                        <option value="complementary">Complementary (Komplemen)</option>
+                        <option value="triadic">Triadic (Triad)</option>
+                        <option value="analogous">Analogous (Analog)</option>
+                        <option value="tetradic">Tetradic (Tetrad)</option>
+                        <option value="random">🎲 Random Harmony</option>
+                    </select>
+                </div>
+                <button class="save-btn" onclick="cpFromBase()">🎨 Generate Palette</button>
+            </div>
+
+            <!-- Result -->
+            <div class="cp-result" id="cpResult" style="display: none;">
+                <div class="cp-result-header">
+                    <span>🌈 Palette Hasil</span>
+                    <button class="cp-copy-all" onclick="cpCopyAll()">📋 Copy All</button>
+                </div>
+                <div class="cp-palette" id="cpPalette"></div>
+                
+                <div class="cp-export-actions">
+                    <button class="cp-export-btn" onclick="cpExport('css')">📄 CSS Vars</button>
+                    <button class="cp-export-btn" onclick="cpExport('tailwind')">🌊 Tailwind</button>
+                    <button class="cp-export-btn" onclick="cpExport('json')">📦 JSON</button>
+                    <button class="cp-export-btn" onclick="cpExport('svg')">🎨 SVG</button>
+                </div>
+
+                <div class="cp-contrast-check">
+                    <div class="cp-contrast-title">♿ Contrast Checker (WCAG)</div>
+                    <div id="cpContrastResults"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ AVATAR GENERATOR PANEL ═══ -->
+<div class="modal" id="avatarModal">
+    <div class="modal-box" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>🎨 AI AVATAR GENERATOR</h3>
+            <button class="modal-close" onclick="closeModal('avatarModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="field">
+                <label>Deskripsi Avatar</label>
+                <input type="text" id="avatarDesc" placeholder="contoh: anime boy dengan rambut silver, mata biru, hoodie hitam...">
+            </div>
+
+            <div class="av-row">
+                <div class="field">
+                    <label>Style</label>
+                    <select id="avatarStyle">
+                        <option value="anime">🌸 Anime</option>
+                        <option value="realistic">📷 Realistic</option>
+                        <option value="pixel">🎮 Pixel Art</option>
+                        <option value="3d">🧊 3D Render</option>
+                        <option value="cartoon">🎨 Cartoon</option>
+                        <option value="cyberpunk">⚡ Cyberpunk</option>
+                        <option value="fantasy">🧙 Fantasy</option>
+                        <option value="chibi">🍡 Chibi</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Jumlah</label>
+                    <select id="avatarCount">
+                        <option value="1">1 Avatar</option>
+                        <option value="4" selected>4 Avatars</option>
+                        <option value="6">6 Avatars</option>
+                        <option value="9">9 Avatars</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Ukuran</label>
+                    <select id="avatarSize">
+                        <option value="256">256×256</option>
+                        <option value="512" selected>512×512</option>
+                        <option value="768">768×768</option>
+                        <option value="1024">1024×1024</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="save-btn" onclick="generateAvatars()">🎨 Generate Avatars</button>
+
+            <div class="av-gallery-wrap" id="avGalleryWrap" style="display: none;">
+                <div class="av-gallery-header">
+                    <span>🖼️ Gallery</span>
+                    <button class="cp-copy-all" onclick="clearAvGallery()">🗑️ Clear</button>
+                </div>
+                <div class="av-gallery" id="avGallery"></div>
+            </div>
+        </div>
+    </div>
+                        </div>
+    
     <!-- ═══ MODALS ═══ -->
     <div class="modal" id="devModal">
         <div class="modal-box">
