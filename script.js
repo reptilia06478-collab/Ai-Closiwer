@@ -1753,3 +1753,414 @@ function openAvatarGen() {
         alert('❌ Avatar modal tidak ditemukan');
     }
 }
+
+/* ═══════════════════════════════════════
+   FITUR #3: AI RECIPE GENERATOR
+═══════════════════════════════════════ */
+
+var rcSelectedDiets = [];
+var rcFavorites = JSON.parse(localStorage.getItem('closiwer_recipes') || '[]');
+var rcActiveTimer = null;
+var rcTimerSeconds = 0;
+
+function rcSetTab(tab, el) {
+    document.querySelectorAll('.rc-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.rc-content').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    var content = document.querySelector('.rc-content[data-rc-tab="' + tab + '"]');
+    if (content) content.classList.add('active');
+    if (tab === 'favorites') rcRenderFavorites();
+}
+
+function rcToggleDiet(el, diet) {
+    var idx = rcSelectedDiets.indexOf(diet);
+    if (idx !== -1) {
+        rcSelectedDiets.splice(idx, 1);
+        el.classList.remove('active');
+    } else {
+        rcSelectedDiets.push(diet);
+        el.classList.add('active');
+    }
+}
+
+/* ═══ AI GENERATE ═══ */
+function rcGenerate() {
+    var ingredients = document.getElementById('rcIngredients').value.trim();
+    if (!ingredients) { showToast('⚠️ Isi bahan dulu'); return; }
+    
+    var cuisine = document.getElementById('rcCuisine').value;
+    var time = document.getElementById('rcTime').value;
+    var difficulty = document.getElementById('rcDifficulty').value;
+    var servings = document.getElementById('rcServings').value;
+    var diets = rcSelectedDiets.length > 0 ? rcSelectedDiets.join(', ') : 'none';
+    
+    var result = document.getElementById('rcResult');
+    result.style.display = 'block';
+    result.innerHTML = '<div class="rc-loading"><div class="rc-spinner"></div><div style="font-size: 12px; color: var(--text-muted);">Chef AI sedang meracik resep... 👨‍🍳</div></div>';
+    
+    var prompt = 'Buatkan resep masakan ' + cuisine + ' dengan bahan-bahan ini: ' + ingredients + '.\n\n' +
+        'Persyaratan:\n' +
+        '- Waktu masak: ' + time + '\n' +
+        '- Tingkat kesulitan: ' + difficulty + '\n' +
+        '- Porsi: ' + servings + ' orang\n' +
+        (diets !== 'none' ? '- Harus sesuai diet: ' + diets + '\n' : '') +
+        '\nFormat jawaban dalam JSON VALID (jangan ada teks lain di luar JSON):\n' +
+        '{\n' +
+        '  "title": "Nama resep",\n' +
+        '  "emoji": "emoji yang cocok",\n' +
+        '  "description": "Deskripsi singkat 1 kalimat",\n' +
+        '  "time": "15 menit",\n' +
+        '  "difficulty": "Mudah",\n' +
+        '  "servings": "2 orang",\n' +
+        '  "calories": "350 kalori per porsi",\n' +
+        '  "ingredients": ["bahan 1 dengan jumlah", "bahan 2 dengan jumlah"],\n' +
+        '  "steps": ["step 1 yang jelas", "step 2", "step 3"],\n' +
+        '  "tips": "tips memasak singkat"\n' +
+        '}';
+    
+    var apiKey = (typeof config !== 'undefined' && config.apiKey) ? config.apiKey : '';
+    
+    if (!apiKey || apiKey.length < 10) {
+        /* Fallback: generate dummy recipe tanpa AI */
+        setTimeout(function() {
+            var dummyRecipe = rcGenerateDummyRecipe(ingredients, cuisine, time, servings);
+            rcDisplayRecipe(dummyRecipe);
+            showToast('💡 Demo resep — isi API key di DEV untuk AI asli');
+        }, 1500);
+        return;
+    }
+    
+    /* Call Groq API */
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: config.model || 'llama-3.1-8b-instant',
+            messages: [
+                { role: 'system', content: 'Kamu adalah chef profesional Indonesia. Jawab HANYA dengan JSON valid tanpa teks pembuka/penutup. Jangan pakai markdown code block.' },
+                { role: 'user', content: prompt }
+            ],
+            temperature: 0.8,
+            max_tokens: 2000,
+            response_format: { type: 'json_object' }
+        })
+    })
+    .then(function(res) {
+        if (!res.ok) return res.json().catch(function() { return {}; }).then(function(d) {
+            throw new Error((d.error && d.error.message) || 'HTTP ' + res.status);
+        });
+        return res.json();
+    })
+    .then(function(data) {
+        var content = data.choices[0].message.content;
+        /* Clean content */
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        var recipe = JSON.parse(content);
+        rcDisplayRecipe(recipe);
+    })
+    .catch(function(err) {
+        console.error('[Recipe] Error:', err);
+        /* Fallback dummy */
+        var dummyRecipe = rcGenerateDummyRecipe(ingredients, cuisine, time, servings);
+        rcDisplayRecipe(dummyRecipe);
+        showToast('⚠️ AI gagal, pakai demo resep');
+    });
+}
+
+function rcDisplayRecipe(recipe) {
+    var result = document.getElementById('rcResult');
+    result.style.display = 'block';
+    
+    var ingredientsHtml = '';
+    if (recipe.ingredients && recipe.ingredients.length) {
+        for (var i = 0; i < recipe.ingredients.length; i++) {
+            ingredientsHtml += '<li>' + escapeHtml(recipe.ingredients[i]) + '</li>';
+        }
+    }
+    
+    var stepsHtml = '';
+    if (recipe.steps && recipe.steps.length) {
+        for (var i = 0; i < recipe.steps.length; i++) {
+            stepsHtml += '<li>' + escapeHtml(recipe.steps[i]) + '</li>';
+        }
+    }
+    
+    var isFav = rcFavorites.some(function(f) { return f.title === recipe.title; });
+    
+    var html = '<div class="recipe-card" data-recipe=\'' + JSON.stringify(recipe).replace(/'/g, '&#39;') + '\'>';
+    html += '<div class="recipe-card-header">';
+    html += '<div style="flex: 1;">';
+    html += '<div class="recipe-title">' + (recipe.emoji || '🍽️') + ' ' + escapeHtml(recipe.title || 'Resep Spesial') + '</div>';
+    if (recipe.description) html += '<div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">' + escapeHtml(recipe.description) + '</div>';
+    html += '<div class="recipe-meta">';
+    if (recipe.time) html += '<span>⏱️ ' + escapeHtml(recipe.time) + '</span>';
+    if (recipe.difficulty) html += '<span>🎚️ ' + escapeHtml(recipe.difficulty) + '</span>';
+    if (recipe.servings) html += '<span>🍴 ' + escapeHtml(recipe.servings) + '</span>';
+    if (recipe.calories) html += '<span>🔥 ' + escapeHtml(recipe.calories) + '</span>';
+    html += '</div></div>';
+    html += '<button class="recipe-save-btn' + (isFav ? ' saved' : '') + '" onclick="rcToggleFavorite(this)">' + (isFav ? '⭐' : '☆') + '</button>';
+    html += '</div>';
+    
+    if (ingredientsHtml) {
+        html += '<div class="recipe-section"><div class="recipe-section-title">🥕 Bahan-bahan</div><ul class="recipe-ingredients">' + ingredientsHtml + '</ul></div>';
+    }
+    
+    if (stepsHtml) {
+        html += '<div class="recipe-section"><div class="recipe-section-title">👨‍🍳 Cara Memasak</div><ol class="recipe-steps">' + stepsHtml + '</ol></div>';
+    }
+    
+    if (recipe.tips) {
+        html += '<div class="recipe-section"><div class="recipe-tips"><strong>💡 Tips:</strong> ' + escapeHtml(recipe.tips) + '</div></div>';
+    }
+    
+    /* Actions */
+    html += '<div class="recipe-actions">';
+    html += '<button class="recipe-action" onclick="rcStartTimer(15)">⏱️ Timer 15m</button>';
+    html += '<button class="recipe-action" onclick="rcStartTimer(30)">⏱️ Timer 30m</button>';
+    html += '<button class="recipe-action" onclick="rcExportRecipe()">📥 Export</button>';
+    html += '<button class="recipe-action" onclick="rcShareRecipe()">🔗 Share</button>';
+    html += '</div>';
+    
+    /* Timer */
+    html += '<div class="recipe-timer" id="rcTimer"><span id="rcTimerDisplay" class="timer-display">00:00</span><button class="timer-btn timer-stop" onclick="rcStopTimer()">⏹ Stop</button></div>';
+    
+    html += '</div>';
+    
+    result.innerHTML = html;
+    showToast('✅ Resep berhasil dibuat!');
+}
+
+function rcGenerateDummyRecipe(ingredients, cuisine, time, servings) {
+    var ingredientList = ingredients.split(/[,\n]/).map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+    
+    var cuisineNames = {
+        indonesia: { emoji: '🇮🇩', title: 'Tumis Spesial Nusantara', steps: ['Panaskan minyak di wajan', 'Tumis bumbu hingga harum', 'Masukkan bahan utama', 'Tambahkan bumbu & kecap', 'Masak hingga matang, sajikan'] },
+        asia: { emoji: '🍜', title: 'Stir-Fry Asia Spesial', steps: ['Siapkan semua bahan', 'Panaskan wajan dengan api besar', 'Tumis bumbu dasar', 'Masukkan bahan utama', 'Tambahkan saus, aduk rata', 'Sajikan panas'] },
+        western: { emoji: '🍔', title: 'Western Delight', steps: ['Siapkan bahan-bahan', 'Panaskan pan dengan butter', 'Cook protein hingga golden', 'Tambahkan sayuran', 'Seasoning & plating'] },
+        italia: { emoji: '🍝', title: 'Pasta Italia Homemade', steps: ['Rebus pasta hingga al dente', 'Buat saus tomat segar', 'Tumis bawang & bumbu', 'Campur pasta dengan saus', 'Taburi keju parmesan'] },
+        'timur-tengah': { emoji: '🥙', title: 'Middle Eastern Bowl', steps: ['Marinasi bahan dengan rempah', 'Panaskan minyak zaitun', 'Panggang hingga matang', 'Sajikan dengan nasi/tortilla', 'Tambahkan saus yogurt'] },
+        dessert: { emoji: '🍰', title: 'Sweet Dessert Homemade', steps: ['Campur bahan kering', 'Campur bahan basah', 'Aduk hingga rata', 'Panggang/kukus hingga matang', 'Hias dan sajikan'] },
+        sehat: { emoji: '🥗', title: 'Healthy Bowl Anti Ribet', steps: ['Cuci bersih semua bahan', 'Potong sesuai selera', 'Campur dalam mangkuk', 'Tambahkan dressing', 'Sajikan segar'] }
+    };
+    
+    var c = cuisineNames[cuisine] || cuisineNames.indonesia;
+    var portions = ingredientList.length > 0 ? ingredientList.map(function(i) { return i + ' secukupnya'; }) : ['Bahan utama', 'Bumbu dasar', 'Garam & gula'];
+    
+    return {
+        title: c.title,
+        emoji: c.emoji,
+        description: 'Resep otentik dengan bahan ' + ingredientList.slice(0, 3).join(', ') + (ingredientList.length > 3 ? ', dll' : ''),
+        time: time === 'cepat' ? '10-15 menit' : (time === 'sedang' ? '15-30 menit' : '30-45 menit'),
+        difficulty: 'Mudah',
+        servings: servings + ' orang',
+        calories: '~' + (250 + Math.floor(Math.random() * 200)) + ' kalori/porsi',
+        ingredients: portions,
+        steps: c.steps,
+        tips: 'Cicipi sebelum disajikan. Sesuaikan bumbu sesuai selera. Gunakan bahan segar untuk hasil terbaik!'
+    };
+}
+
+function rcToggleFavorite(btn) {
+    var card = btn.closest('.recipe-card');
+    var recipeData = card.getAttribute('data-recipe');
+    try {
+        var recipe = JSON.parse(recipeData);
+        var idx = -1;
+        for (var i = 0; i < rcFavorites.length; i++) {
+            if (rcFavorites[i].title === recipe.title) { idx = i; break; }
+        }
+        if (idx === -1) {
+            rcFavorites.unshift(recipe);
+            btn.classList.add('saved');
+            btn.textContent = '⭐';
+            showToast('⭐ Disimpan ke favorit!');
+        } else {
+            rcFavorites.splice(idx, 1);
+            btn.classList.remove('saved');
+            btn.textContent = '☆';
+            showToast('🗑️ Dihapus dari favorit');
+        }
+        localStorage.setItem('closiwer_recipes', JSON.stringify(rcFavorites));
+    } catch(e) {
+        console.error('Parse recipe error:', e);
+    }
+}
+
+function rcRenderFavorites() {
+    var list = document.getElementById('rcFavoritesList');
+    if (rcFavorites.length === 0) {
+        list.innerHTML = '<div class="rc-empty"><div class="rc-empty-icon">🍽️</div>Belum ada resep tersimpan.<br><br>Generate resep dulu, terus tap ⭐ untuk simpan!</div>';
+        return;
+    }
+    var html = '';
+    for (var i = 0; i < rcFavorites.length; i++) {
+        var r = rcFavorites[i];
+        html += '<div class="rc-fav-item" onclick="rcShowFavorite(' + i + ')">';
+        html += '<div class="rc-fav-emoji">' + (r.emoji || '🍽️') + '</div>';
+        html += '<div class="rc-fav-info">';
+        html += '<div class="rc-fav-title">' + escapeHtml(r.title || 'Resep') + '</div>';
+        html += '<div class="rc-fav-meta">⏱️ ' + escapeHtml(r.time || '-') + ' · 🍴 ' + escapeHtml(r.servings || '-') + '</div>';
+        html += '</div>';
+        html += '<button class="rc-fav-delete" onclick="event.stopPropagation(); rcDeleteFavorite(' + i + ')">🗑️</button>';
+        html += '</div>';
+    }
+    list.innerHTML = html;
+}
+
+function rcShowFavorite(idx) {
+    var recipe = rcFavorites[idx];
+    if (!recipe) return;
+    rcDisplayRecipe(recipe);
+    rcSetTab('generate', document.querySelector('.rc-tab'));
+    showToast('📖 Menampilkan: ' + recipe.title);
+}
+
+function rcDeleteFavorite(idx) {
+    if (!confirm('Hapus resep ini?')) return;
+    rcFavorites.splice(idx, 1);
+    localStorage.setItem('closiwer_recipes', JSON.stringify(rcFavorites));
+    rcRenderFavorites();
+    showToast('🗑️ Resep dihapus');
+}
+
+function rcClearFavorites() {
+    if (!confirm('Hapus SEMUA resep favorit?')) return;
+    rcFavorites = [];
+    localStorage.removeItem('closiwer_recipes');
+    rcRenderFavorites();
+    showToast('🗑️ Semua resep dihapus');
+}
+
+function rcRandom() {
+    var bahanUmum = ['ayam', 'telur', 'nasi', 'mie', 'tahu', 'tempe', 'sayur', 'ikan', 'daging', 'kentang', 'wortel', 'bawang', 'cabai', 'tomat', 'keju', 'susu', 'tepung'];
+    var randomBahan = [];
+    var count = 3 + Math.floor(Math.random() * 4);
+    var shuffled = bahanUmum.slice().sort(function() { return 0.5 - Math.random(); });
+    for (var i = 0; i < count; i++) randomBahan.push(shuffled[i]);
+    document.getElementById('rcIngredients').value = randomBahan.join(', ');
+    rcGenerate();
+}
+
+/* ═══ TIMER ═══ */
+function rcStartTimer(minutes) {
+    rcStopTimer();
+    rcTimerSeconds = minutes * 60;
+    document.getElementById('rcTimer').classList.add('show');
+    rcUpdateTimerDisplay();
+    
+    rcActiveTimer = setInterval(function() {
+        rcTimerSeconds--;
+        rcUpdateTimerDisplay();
+        if (rcTimerSeconds <= 0) {
+            rcStopTimer();
+            showToast('⏰ WAKTU HABIS! Cek masakan lu!');
+            /* Play sound */
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+                osc.start();
+                osc.stop(ctx.currentTime + 1);
+            } catch(e) {}
+        }
+    }, 1000);
+    showToast('⏱️ Timer ' + minutes + ' menit dimulai!');
+}
+
+function rcStopTimer() {
+    if (rcActiveTimer) {
+        clearInterval(rcActiveTimer);
+        rcActiveTimer = null;
+    }
+    var el = document.getElementById('rcTimer');
+    if (el) el.classList.remove('show');
+}
+
+function rcUpdateTimerDisplay() {
+    var el = document.getElementById('rcTimerDisplay');
+    if (!el) return;
+    var m = Math.floor(rcTimerSeconds / 60);
+    var s = rcTimerSeconds % 60;
+    el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+/* ═══ EXPORT & SHARE ═══ */
+function rcExportRecipe() {
+    var card = document.querySelector('.recipe-card');
+    if (!card) { showToast('⚠️ Generate resep dulu'); return; }
+    var recipeData = card.getAttribute('data-recipe');
+    try {
+        var recipe = JSON.parse(recipeData);
+        var text = '🍽️ ' + (recipe.emoji || '') + ' ' + (recipe.title || 'Resep') + '\n';
+        text += '='.repeat(40) + '\n\n';
+        if (recipe.description) text += recipe.description + '\n\n';
+        text += '⏱️ Waktu: ' + (recipe.time || '-') + '\n';
+        text += '🎚️ Kesulitan: ' + (recipe.difficulty || '-') + '\n';
+        text += '🍴 Porsi: ' + (recipe.servings || '-') + '\n';
+        text += '🔥 Kalori: ' + (recipe.calories || '-') + '\n\n';
+        text += '🥕 BAHAN-BAHAN:\n';
+        (recipe.ingredients || []).forEach(function(i) { text += '  • ' + i + '\n'; });
+        text += '\n👨‍🍳 CARA MEMASAK:\n';
+        (recipe.steps || []).forEach(function(s, i) { text += '  ' + (i + 1) + '. ' + s + '\n'; });
+        if (recipe.tips) text += '\n💡 TIPS: ' + recipe.tips + '\n';
+        text += '\n---\nGenerated by CLOSIWER AI by PANN\n';
+        
+        var blob = new Blob([text], { type: 'text/plain' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (recipe.title || 'resep').replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('📥 Resep di-export!');
+    } catch(e) {
+        showToast('⚠️ Gagal export');
+    }
+}
+
+function rcShareRecipe() {
+    var card = document.querySelector('.recipe-card');
+    if (!card) { showToast('⚠️ Generate resep dulu'); return; }
+    var recipeData = card.getAttribute('data-recipe');
+    try {
+        var recipe = JSON.parse(recipeData);
+        var text = '🍽️ ' + (recipe.emoji || '') + ' ' + (recipe.title || 'Resep') + '\n\n';
+        text += (recipe.description || '') + '\n\n';
+        text += '⏱️ ' + (recipe.time || '-') + ' · 🍴 ' + (recipe.servings || '-') + '\n\n';
+        text += 'Bahan:\n';
+        (recipe.ingredients || []).slice(0, 5).forEach(function(i) { text += '• ' + i + '\n'; });
+        text += '\nDibuat dengan CLOSIWER AI 🚀';
+        
+        if (navigator.share) {
+            navigator.share({ title: recipe.title, text: text });
+        } else {
+            copyToClipboard(text, 'Resep disalin!');
+        }
+    } catch(e) {
+        showToast('⚠️ Gagal share');
+    }
+}
+
+/* ═══ QUICK ACCESS ═══ */
+function openRecipeGenerator() {
+    var modal = document.getElementById('recipeModal');
+    if (modal) {
+        modal.classList.add('show');
+        rcRenderFavorites();
+    }
+}
+
+/* ═══ AUTO-LOAD FAVORITES ═══ */
+setTimeout(function() {
+    rcRenderFavorites();
+}, 1000);
+
+console.log('🍳 FITUR v5.1: Recipe Generator loaded!');
