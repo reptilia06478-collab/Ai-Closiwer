@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://reptilia06478-collab.github.io/Ai-Closiwer/sitemap.xml
