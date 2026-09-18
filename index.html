@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>CLOSIWER AI — Coding & Math Expert</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════ RESET ═══════════ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            background: #0a0a0f;
+            color: #f5f4ef;
+            overflow: hidden;
+        }
+
+        /* ═══════════ THEME ═══════════ */
+        :root {
+            --primary: #d97757;
+            --primary-light: #ff8c5a;
+            --primary-dark: #a85433;
+            --primary-glow: rgba(217, 119, 87, 0.35);
+            --bg-base: #0a0a0f;
+            --bg-primary: #12121a;
+            --bg-secondary: #1a1a24;
+            --bg-tertiary: #22222e;
+            --text-primary: #f5f4ef;
+            --text-secondary: #a8a8b8;
+            --text-muted: #6b6b7d;
+            --text-dim: #4a4a55;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.15);
+            --success: #4ade80;
+            --error: #f87171;
+            --warning: #fbbf24;
+        }
+
+        [data-theme="light"] {
+            --bg-base: #f5f5f7;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f0f0f5;
+            --bg-tertiary: #e5e5eb;
+            --text-primary: #1a1a24;
+            --text-secondary: #4a4a55;
+            --text-muted: #8888a0;
+            --text-dim: #a8a8b8;
+            --border: rgba(0, 0, 0, 0.08);
+            --border-strong: rgba(0, 0, 0, 0.15);
+        }
+
+        /* ═══════════ BACKGROUND ═══════════ */
+        #bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        #bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('Dev.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.25;
+            filter: blur(1px);
+        }
+
+        #bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 20%, var(--bg-base) 85%);
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            pointer-events: none;
+        }
+
+        .orb1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -150px;
+            left: -150px;
+            opacity: 0.3;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb2 {
+            width: 350px;
+            height: 350px;
+            background: #6366f1;
+            bottom: -150px;
+            right: -150px;
+            opacity: 0.15;
+            animation: float 25s infinite ease-in-out reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, -30px) scale(1.1); }
+        }
+
+        /* ═══════════ LAYOUT ═══════════ */
+        #app {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ═══════════ HEADER ═══════════ */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(18, 18, 26, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        [data-theme="light"] .header {
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            box-shadow: 0 0 16px var(--primary-glow);
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 9px;
+            color: var(--success);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .icon-btn:active {
+            transform: scale(0.9);
+            background: var(--bg-tertiary);
+        }
+
+        .dev-btn {
+            background: rgba(217, 119, 87, 0.15);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0;
+        }
+
+        /* ═══════════ CHAT AREA ═══════════ */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        /* Welcome */
+        .welcome {
+            text-align: center;
+            padding: 30px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+        }
+
+        .welcome-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 18px;
+            box-shadow: 0 0 40px var(--primary-glow);
+            animation: bob 3s infinite ease-in-out;
+        }
+
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .welcome h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome p {
+            color: var(--text-muted);
+            font-size: 13px;
+            max-width: 400px;
+            margin-bottom: 24px;
+        }
+
+        .personality-chips {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .chip {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .suggestions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .suggestion {
+            padding: 11px 12px;
+            background: rgba(26, 26, 36, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            color: var(--text-primary);
+            font-size: 11.5px;
+            line-height: 1.4;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        [data-theme="light"] .suggestion {
+            background: white;
+        }
+
+        .suggestion:active {
+            background: rgba(217, 119, 87, 0.2);
+            border-color: var(--primary);
+            transform: scale(0.97);
+        }
+
+        .suggestion .emoji {
+            font-size: 15px;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        /* Messages */
+        .message {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .message.user .avatar {
+            background: linear-gradient(135deg, #4a4a55, #33333f);
+            border: 1px solid var(--border-strong);
+        }
+
+        .message.ai .avatar {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+            box-shadow: 0 0 16px var(--primary-glow);
+            color: white;
+        }
+
+        .bubble {
+            flex: 1;
+            min-width: 0;
+            font-size: 14px;
+            line-height: 1.65;
+            padding-top: 4px;
+            word-wrap: break-word;
+        }
+
+        .bubble .role {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .bubble .content {
+            color: var(--text-primary);
+        }
+
+        .bubble .content p {
+            margin-bottom: 8px;
+        }
+
+        .bubble .content strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .bubble .content em {
+            color: var(--text-secondary);
+        }
+
+        .bubble .content code {
+            background: rgba(217, 119, 87, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: var(--primary-light);
+        }
+
+        .bubble .content pre {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        [data-theme="light"] .bubble .content pre {
+            background: #1a1a24;
+        }
+
+        .bubble .content pre .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            color: #888;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .bubble .content pre .copy-code {
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        .bubble .content pre .copy-code:active {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--primary-light);
+        }
+
+        .bubble .content pre code {
+            display: block;
+            background: transparent;
+            padding: 12px 14px;
+            color: #e8e8e8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .bubble .content ul, .bubble .content ol {
+            padding-left: 22px;
+            margin: 8px 0;
+        }
+
+        .bubble .content li {
+            margin-bottom: 4px;
+        }
+
+        .bubble .content blockquote {
+            border-left: 3px solid var(--primary);
+            padding: 6px 12px;
+            margin: 8px 0;
+            color: var(--text-secondary);
+            background: rgba(217, 119, 87, 0.05);
+            border-radius: 0 6px 6px 0;
+            font-style: italic;
+        }
+
+        .bubble .content h1, .bubble .content h2, .bubble .content h3 {
+            color: var(--text-primary);
+            font-weight: 700;
+            margin: 12px 0 6px;
+            line-height: 1.3;
+        }
+
+        .bubble .content h1 { font-size: 18px; }
+        .bubble .content h2 { font-size: 16px; }
+        .bubble .content h3 { font-size: 14.5px; }
+
+        /* Message actions */
+        .msg-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            opacity: 0.6;
+            flex-wrap: wrap;
+        }
+
+        .msg-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 5px 9px;
+            border-radius: 6px;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .msg-btn:active {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+        }
+
+        /* Typing */
+        .typing {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        /* Upload preview */
+        .upload-preview {
+            display: none;
+            padding: 8px 14px;
+            background: rgba(217, 119, 87, 0.1);
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-secondary);
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-preview.show {
+            display: flex;
+        }
+
+        .upload-preview .file-name {
+            flex: 1;
+            color: var(--primary);
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .upload-preview .remove-file {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+
+        /* ═══════════ INPUT AREA ═══════════ */
+        .input-area {
+            padding: 10px 14px 14px;
+            background: rgba(10, 10, 15, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        [data-theme="light"] .input-area {
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            background: rgba(26, 26, 36, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 8px 8px 8px 12px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        [data-theme="light"] .input-wrapper {
+            background: white;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        #input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            max-height: 140px;
+            padding: 6px 0;
+            font-family: inherit;
+        }
+
+        #input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+
+        .action-btn:active {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+        }
+
+        .action-btn.recording {
+            background: #f87171;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        .send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 12px var(--primary-glow);
+            transition: all 0.2s;
+        }
+
+        .send-btn:active:not(:disabled) {
+            transform: scale(0.9);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .send-btn.stop-mode {
+            background: linear-gradient(135deg, #f87171, #dc2626);
+        }
+
+        .input-footer {
+            text-align: center;
+            font-size: 9.5px;
+            color: var(--text-dim);
+            margin-top: 6px;
+        }
+
+        /* ═══════════ MODAL ═══════════ */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal.show {
+            display: flex;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-strong);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 420px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: modalIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            z-index: 1;
+            border-radius: 18px 18px 0 0;
+        }
+
+        .modal-header h3 {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 1.5px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 26px;
+            cursor: pointer;
+            padding: 0 6px;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 18px;
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(217, 119, 87, 0.12), rgba(168, 84, 51, 0.05));
+            border: 1px solid rgba(217, 119, 87, 0.3);
+            border-radius: 11px;
+            padding: 12px;
+            margin-bottom: 14px;
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: var(--primary);
+        }
+
+        .info-box a {
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 4px 16px var(--primary-glow);
+        }
+
+        .save-btn:active {
+            transform: scale(0.98);
+        }
+
+        .status-box {
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: var(--bg-base);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .status-box.active {
+            border-color: var(--success);
+            color: var(--success);
+            background: rgba(74, 222, 128, 0.05);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-strong);
+            color: var(--text-primary);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 2000;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- BACKGROUND -->
+    <div id="bg">
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+    </div>
+
+    <!-- APP -->
+    <div id="app">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">✦</div>
+                <div class="logo-text">CLOSIWER</div>
+            </div>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="statusText">READY</span>
+            </div>
+            <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Tema">🌙</button>
+            <button class="icon-btn" onclick="exportChat()" title="Export">📥</button>
+            <button class="icon-btn" onclick="clearChat()" title="Hapus">🗑️</button>
+            <button class="dev-btn" onclick="openDev()">DEV</button>
+        </div>
+
+        <!-- CHAT -->
+        <div class="chat-area" id="chatArea">
+            <div class="welcome" id="welcome">
+                <div class="welcome-logo">✦</div>
+                <h1>CLOSIWER AI</h1>
+                <p>Asisten coding & matematika. 100% Gratis · Unlimited</p>
+                
+                <div class="personality-chips">
+                    <button class="chip active" onclick="setPersonality('default', this)">🎯 Default</button>
+                    <button class="chip" onclick="setPersonality('coder', this)">💻 Coder</button>
+                    <button class="chip" onclick="setPersonality('teacher', this)">📚 Teacher</button>
+                    <button class="chip" onclick="setPersonality('creative', this)">🎨 Creative</button>
+                </div>
+
+                <div class="suggestions">
+                    <button class="suggestion" onclick="quickAsk('Buatkan REST API Node.js dengan JWT auth lengkap')">
+                        <span class="emoji">💻</span>
+                        REST API Node.js + JWT
+                    </button>
+                    <button class="suggestion" onclick="quickAsk('Selesaikan integral 2x^3 + 3x^2 - 5x + 7 dx dengan step-by-step')">
+                        <span class="emoji">📐</span>
+                        Integral step-by-step
+                    </button>
+                    <button class="suggestion" onclick="quickAsk('Buatkan Todo List dengan React Hooks dan localStorage')">
+                        <span class="emoji">⚛️</span>
+                        Todo List React
+                    </button>
+                    <button class="suggestion" onclick="quickAsk('Jelaskan cara kerja neural network dengan analogi sederhana')">
+                        <span class="emoji">🧠</span>
+                        Neural Network
+                    </button>
+                </div>
+            </div>
+            <div id="messages"></div>
+        </div>
+
+        <!-- UPLOAD PREVIEW -->
+        <div class="upload-preview" id="uploadPreview">
+            <span>📎</span>
+            <span class="file-name" id="fileName"></span>
+            <button class="remove-file" onclick="removeFile()">×</button>
+        </div>
+
+        <!-- INPUT -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <button class="action-btn" onclick="triggerUpload()" title="Upload file">📎</button>
+                <input type="file" id="fileInput" style="display:none" onchange="handleFile(event)">
+                <textarea id="input" rows="1" placeholder="Tanya apa saja..." oninput="onInput()"></textarea>
+                <button class="action-btn" id="micBtn" onclick="toggleVoice()" title="Voice input">🎤</button>
+                <button class="send-btn" id="sendBtn" onclick="handleSendClick()" disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                        <polyline points="5 12 12 5 19 12"></polyline>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-footer">⚡ CLOSIWER AI · Powered by ClosiwerCore™</div>
+        </div>
+    </div>
+
+    <!-- DEV MODAL -->
+    <div class="modal" id="devModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>⚙ DEV SETTINGS</h3>
+                <button class="modal-close" onclick="closeDev()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="info-box">
+                    <strong>🎁 GRATIS 100%!</strong><br>
+                    Isi API Key untuk AI asli. Atau biarkan kosong = unlimited simulation.<br><br>
+                    <strong>Dapatkan API Key GRATIS:</strong><br>
+                    <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>
+                </div>
+
+                <div class="field">
+                    <label>Provider</label>
+                    <select id="provider">
+                        <option value="groq">Groq (GRATIS - Cepat)</option>
+                        <option value="openai">OpenAI</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>API Key</label>
+                    <input type="password" id="apiKey" placeholder="gsk_... (kosongin = simulasi)">
+                </div>
+
+                <div class="field">
+                    <label>Model Name</label>
+                    <input type="text" id="model" placeholder="llama-3.1-8b-instant" list="modelList">
+                    <datalist id="modelList">
+                        <option value="llama-3.1-8b-instant">
+                        <option value="llama-3.1-70b-versatile">
+                        <option value="llama-3.2-3b-preview">
+                        <option value="mixtral-8x7b-32768">
+                        <option value="gemma2-9b-it">
+                    </datalist>
+                </div>
+
+                <button class="save-btn" onclick="saveConfig()">💾 Simpan</button>
+
+                <div class="status-box" id="statusBox">Status: Belum dikonfigurasi</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ═══════════════════════════════════════
+        // CLOSIWER AI v2.0 - Ultimate Edition
+        // ═══════════════════════════════════════
+
+        var messages = [];
+        var isTyping = false;
+        var currentAbortController = null;
+        var currentPersonality = 'default';
+        var uploadedFile = null;
+        var recognition = null;
+        var isRecording = false;
+
+        var config = {
+            apiKey: localStorage.getItem('closiwer_key') || '',
+            provider: localStorage.getItem('closiwer_provider') || 'groq',
+            model: localStorage.getItem('closiwer_model') || 'llama-3.1-8b-instant'
+        };
+
+        var personalities = {
+            default: 'Kamu adalah CLOSIWER AI, asisten AI cerdas. Jawab dengan detail, ramah, dan informatif dalam Bahasa Indonesia.',
+            coder: 'Kamu adalah CLOSIWER AI dalam mode CODER. Fokus pada coding, debugging, dan best practices. Kasih kode lengkap dengan komentar. Prioritaskan clean code, performance, dan security.',
+            teacher: 'Kamu adalah CLOSIWER AI dalam mode TEACHER. Jelaskan dengan sabar, step-by-step, pakai analogi sederhana. Kasih contoh konkret dan latihan.',
+            creative: 'Kamu adalah CLOSIWER AI dalam mode CREATIVE. Bersikaplah imajinatif, ekspresif, dan inspiring. Gunakan bahasa yang indah dan puitis.'
+        };
+
+        // ═══ THEME ═══
+        function toggleTheme() {
+            var current = document.documentElement.getAttribute('data-theme') || 'dark';
+            var next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            document.getElementById('themeBtn').textContent = next === 'dark' ? '🌙' : '☀️';
+            localStorage.setItem('closiwer_theme', next);
+        }
+
+        // Load theme
+        var savedTheme = localStorage.getItem('closiwer_theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            if (savedTheme === 'light') document.getElementById('themeBtn').textContent = '☀️';
+        }
+
+        // ═══ INIT ═══
+        window.addEventListener('load', function() {
+            updateStatus();
+            loadConfigToUI();
+            loadChatHistory();
+            initVoiceRecognition();
+            console.log('CLOSIWER AI ready! ✅');
+        });
+
+        // ═══ PERSONALITY ═══
+        function setPersonality(p, el) {
+            currentPersonality = p;
+            var chips = document.querySelectorAll('.personality-chips .chip');
+            for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
+            el.classList.add('active');
+            showToast('Mode: ' + p);
+        }
+
+        // ═══ INPUT ═══
+        function onInput() {
+            var input = document.getElementById('input');
+            var btn = document.getElementById('sendBtn');
+            btn.disabled = !input.value.trim() && !uploadedFile;
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+        }
+
+        document.getElementById('input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!document.getElementById('sendBtn').disabled) handleSendClick();
+            }
+        });
+
+        // ═══ SEND/STOP ═══
+        function handleSendClick() {
+            if (isTyping) {
+                stopGeneration();
+            } else {
+                sendMessage();
+            }
+        }
+
+        function stopGeneration() {
+            if (currentAbortController) {
+                currentAbortController.abort();
+                currentAbortController = null;
+            }
+            isTyping = false;
+            removeTyping();
+            updateSendBtn();
+            showToast('⏹ Dihentikan');
+        }
+
+        function updateSendBtn() {
+            var btn = document.getElementById('sendBtn');
+            if (isTyping) {
+                btn.classList.add('stop-mode');
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>';
+                btn.disabled = false;
+            } else {
+                btn.classList.remove('stop-mode');
+                btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>';
+                btn.disabled = !document.getElementById('input').value.trim() && !uploadedFile;
+            }
+        }
+
+        // ═══ QUICK ASK ═══
+        function quickAsk(text) {
+            document.getElementById('input').value = text;
+            onInput();
+            sendMessage();
+        }
+
+        // ═══ FILE UPLOAD ═══
+        function triggerUpload() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFile(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            
+            uploadedFile = file;
+            document.getElementById('fileName').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+            document.getElementById('uploadPreview').classList.add('show');
+            
+            // Read file content
+            if (file.type.startsWith('text/') || file.name.match(/\.(txt|md|js|py|html|css|json|xml|csv|log)$/i)) {
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    uploadedFile.content = ev.target.result.slice(0, 10000);
+                };
+                reader.readAsText(file);
+            }
+            
+            updateSendBtn();
+        }
+
+        function removeFile() {
+            uploadedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadPreview').classList.remove('show');
+            updateSendBtn();
+        }
+
+        // ═══ VOICE ═══
+        function initVoiceRecognition() {
+            var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) {
+                document.getElementById('micBtn').style.opacity = '0.3';
+                return;
+            }
+            
+            recognition = new SR();
+            recognition.lang = 'id-ID';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onresult = function(e) {
+                var text = e.results[0][0].transcript;
+                document.getElementById('input').value = text;
+                onInput();
+                showToast('🎤 ' + text.slice(0, 30) + '...');
+            };
+            
+            recognition.onend = function() {
+                isRecording = false;
+                document.getElementById('micBtn').classList.remove('recording');
+            };
+            
+            recognition.onerror = function() {
+                isRecording = false;
+                document.getElementById('micBtn').classList.remove('recording');
+            };
+        }
+
+        function toggleVoice() {
+            if (!recognition) {
+                showToast('❌ Voice tidak didukung');
+                return;
+            }
+            
+            if (isRecording) {
+                recognition.stop();
+                isRecording = false;
+                document.getElementById('micBtn').classList.remove('recording');
+            } else {
+                try {
+                    recognition.start();
+                    isRecording = true;
+                    document.getElementById('micBtn').classList.add('recording');
+                    showToast('🎤 Mendengarkan...');
+                } catch(e) {
+                    isRecording = false;
+                    document.getElementById('micBtn').classList.remove('recording');
+                }
+            }
+        }
+
+        // ═══ TEXT TO SPEECH ═══
+        function speak(text) {
+            if (!('speechSynthesis' in window)) {
+                showToast('❌ TTS tidak didukung');
+                return;
+            }
+            speechSynthesis.cancel();
+            var u = new SpeechSynthesisUtterance(text.slice(0, 500));
+            u.lang = 'id-ID';
+            u.rate = 1;
+            speechSynthesis.speak(u);
+            showToast('🔊 Membaca...');
+        }
+
+        // ═══ SEND MESSAGE ═══
+        function sendMessage() {
+            var input = document.getElementById('input');
+            var text = input.value.trim();
+            
+            if (!text && !uploadedFile) return;
+            if (isTyping) return;
+            
+            // Include file content
+            var fullText = text;
+            if (uploadedFile && uploadedFile.content) {
+                fullText = text + '\n\n[File: ' + uploadedFile.name + ']\n```\n' + uploadedFile.content + '\n```';
+            } else if (uploadedFile) {
+                fullText = text + '\n\n[File attached: ' + uploadedFile.name + ']';
+            }
+            
+            messages.push({ role: 'user', content: text || '[File: ' + uploadedFile.name + ']', timestamp: Date.now() });
+            
+            input.value = '';
+            input.style.height = 'auto';
+            removeFile();
+            document.getElementById('welcome').style.display = 'none';
+            
+            renderMessages();
+            scrollBottom();
+            saveChatHistory();
+            
+            isTyping = true;
+            updateSendBtn();
+            showTyping();
+            
+            getAIResponse(fullText, currentAbortController = new AbortController());
+        }
+
+        // ═══ AI ═══
+        function getAIResponse(text, controller) {
+            if (config.apiKey && config.apiKey.length > 10) {
+                callAPI(text, controller);
+            } else {
+                simulate(text);
+            }
+        }
+
+        function callAPI(text, controller) {
+            var url = config.provider === 'groq' 
+                ? 'https://api.groq.com/openai/v1/chat/completions'
+                : 'https://api.openai.com/v1/chat/completions';
+
+            var apiMessages = [
+                { role: 'system', content: personalities[currentPersonality] }
+            ];
+            
+            // Add context (last 10 messages)
+            var contextMessages = messages.slice(-10);
+            for (var i = 0; i < contextMessages.length; i++) {
+                apiMessages.push({ role: contextMessages[i].role, content: contextMessages[i].content });
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + config.apiKey
+                },
+                body: JSON.stringify({
+                    model: config.model,
+                    messages: apiMessages,
+                    temperature: 0.7,
+                    max_tokens: 4096
+                }),
+                signal: controller ? controller.signal : undefined
+            })
+            .then(function(res) {
+                if (!res.ok) {
+                    return res.json().catch(function() { return {}; }).then(function(data) {
+                        throw new Error((data.error && data.error.message) || 'HTTP ' + res.status);
+                    });
+                }
+                return res.json();
+            })
+            .then(function(data) {
+                removeTyping();
+                var response = data.choices[0].message.content;
+                messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
+                renderMessages();
+                scrollBottom();
+                saveChatHistory();
+                isTyping = false;
+                updateSendBtn();
+                currentAbortController = null;
+            })
+            .catch(function(err) {
+                removeTyping();
+                if (err.name === 'AbortError') {
+                    isTyping = false;
+                    updateSendBtn();
+                    return;
+                }
+                messages.push({ role: 'assistant', content: '⚠️ Error: ' + err.message + '\n\nCek API key & model di tombol DEV.', timestamp: Date.now() });
+                renderMessages();
+                scrollBottom();
+                isTyping = false;
+                updateSendBtn();
+                currentAbortController = null;
+            });
+        }
+
+        function simulate(text) {
+            setTimeout(function() {
+                removeTyping();
+                var response = getSimResponse(text);
+                messages.push({ role: 'assistant', content: response, timestamp: Date.now() });
+                renderMessages();
+                scrollBottom();
+                saveChatHistory();
+                isTyping = false;
+                updateSendBtn();
+            }, 800);
+        }
+
+        function getSimResponse(text) {
+            var p = text.toLowerCase();
+
+            if (/^(halo|hai|hello|hi|hey|pagi|siang|sore|malam)/.test(p)) {
+                return 'Halo! 👋 Saya **CLOSIWER AI**.\n\n🔑 **Aktifkan AI asli (GRATIS):**\n1. Klik tombol **DEV**\n2. Daftar di [console.groq.com/keys](https://console.groq.com/keys)\n3. Paste API key\n4. Simpan → AI siap!\n\n💡 **Coba tanya:**\n• "Buat REST API Node.js"\n• "Selesaikan integral 2x³"\n• "Buat Todo List React"';
+            }
+
+            if (p.indexOf('integral') !== -1) {
+                return '## 📐 Integral Solver\n\n**Soal:** ∫ (2x³ + 3x² - 5x + 7) dx\n\n### Step-by-step:\n\n**1.** Integralkan tiap suku:\n```\n∫ 2x³ dx = 2·x⁴/4 = x⁴/2\n∫ 3x² dx = 3·x³/3 = x³\n∫ 5x dx  = 5·x²/2\n∫ 7 dx   = 7x\n```\n\n**2.** Gabung + C:\n\n✅ **Hasil: x⁴/2 + x³ - 5x²/2 + 7x + C**\n\n### Verifikasi:\nd/dx (x⁴/2 + x³ - 5x²/2 + 7x) = 2x³ + 3x² - 5x + 7 ✓\n\n> 💡 Isi API key di DEV untuk jawaban AI yang lebih dinamis!';
+            }
+
+            if (p.indexOf('react') !== -1 || p.indexOf('todo') !== -1) {
+                return '## 💻 React Todo List\n\n```jsx\nimport { useState, useEffect } from "react";\n\nfunction TodoApp() {\n  const [todos, setTodos] = useState([]);\n  const [input, setInput] = useState("");\n\n  useEffect(() => {\n    const saved = localStorage.getItem("todos");\n    if (saved) setTodos(JSON.parse(saved));\n  }, []);\n\n  useEffect(() => {\n    localStorage.setItem("todos", JSON.stringify(todos));\n  }, [todos]);\n\n  const add = () => {\n    if (!input.trim()) return;\n    setTodos([...todos, { id: Date.now(), text: input, done: false }]);\n    setInput("");\n  };\n\n  return (\n    <div>\n      <input value={input} onChange={e => setInput(e.target.value)} />\n      <button onClick={add}>+ Tambah</button>\n      <ul>\n        {todos.map(t => <li key={t.id}>{t.text}</li>)}\n      </ul>\n    </div>\n  );\n}\n```\n\n✅ Add todo\n✅ Auto-save localStorage\n✅ Persist setelah refresh\n\n> Isi API key di DEV untuk jawaban AI yang lebih pintar!';
+            }
+
+            if (p.indexOf('api') !== -1 || p.indexOf('node') !== -1) {
+                return '## 🚀 REST API Node.js + JWT\n\n```javascript\nconst express = require("express");\nconst jwt = require("jsonwebtoken");\nconst bcrypt = require("bcryptjs");\n\nconst app = express();\napp.use(express.json());\nconst SECRET = "rahasia";\n\napp.post("/register", async (req, res) => {\n  const { email, password } = req.body;\n  const hash = await bcrypt.hash(password, 10);\n  const token = jwt.sign({ email }, SECRET, { expiresIn: "7d" });\n  res.json({ token });\n});\n\napp.post("/login", async (req, res) => {\n  const { email, password } = req.body;\n  const token = jwt.sign({ email }, SECRET, { expiresIn: "7d" });\n  res.json({ token });\n});\n\napp.listen(3000, () => console.log("Server :3000"));\n```\n\nInstall:\n```bash\nnpm i express jsonwebtoken bcryptjs\n```';
+            }
+
+            return '📝 **Pertanyaan lu:** "' + text + '"\n\nSaat ini saya dalam **mode simulasi**.\n\n🔑 **Aktifkan AI asli (GRATIS):**\n1. Klik tombol **DEV** di atas\n2. Daftar gratis di [console.groq.com/keys](https://console.groq.com/keys)\n3. Paste API key → Simpan\n4. AI siap!\n\n### 💡 Coba tanya:\n• "Buat REST API Node.js"\n• "Selesaikan integral"\n• "Buat Todo List React"\n• "Jelaskan neural network"';
+        }
+
+        // ═══ RENDER ═══
+        function renderMessages() {
+            var html = '';
+            for (var i = 0; i < messages.length; i++) {
+                html += renderMessage(messages[i], i);
+            }
+            document.getElementById('messages').innerHTML = html;
+        }
+
+        function renderMessage(msg, index) {
+            var isUser = msg.role === 'user';
+            var html = '<div class="message ' + (isUser ? 'user' : 'ai') + '">';
+            html += '<div class="avatar">' + (isUser ? 'U' : '✦') + '</div>';
+            html += '<div class="bubble">';
+            html += '<div class="role">' + (isUser ? 'ANDA' : 'CLOSIWER') + '</div>';
+            html += '<div class="content">' + formatText(msg.content) + '</div>';
+            
+            if (!isUser) {
+                html += '<div class="msg-actions">';
+                html += '<button class="msg-btn" onclick="copyMessage(' + index + ')">📋 Copy</button>';
+                html += '<button class="msg-btn" onclick="speakMessage(' + index + ')">🔊 Dengar</button>';
+                html += '<button class="msg-btn" onclick="regenMessage()">🔄 Ulang</button>';
+                html += '</div>';
+            }
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        function formatText(text) {
+            var html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            // Code blocks
+            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, function(m, lang, code) {
+                var language = lang || 'code';
+                return '<pre><div class="code-header"><span>' + language + '</span><button class="copy-code" onclick="copyCode(this)">📋 COPY</button></div><code>' + code.trim() + '</code></pre>';
+            });
+
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Headers
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+            // Bold
+            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // Italic
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+            // Blockquote
+            html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // Lists
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*?<\/li>)(?:\n|$)+/gs, function(m) {
+                return '<ul>' + m + '</ul>';
+            });
+
+            // Line breaks & paragraphs
+            var blocks = html.split('\n\n');
+            var result = '';
+            for (var i = 0; i < blocks.length; i++) {
+                var b = blocks[i].trim();
+                if (!b) continue;
+                if (/^<(pre|ul|ol|h1|h2|h3|blockquote|div)/.test(b)) {
+                    result += b;
+                } else {
+                    result += '<p>' + b.replace(/\n/g, '<br>') + '</p>';
+                }
+            }
+
+            return result;
+        }
+
+        // ═══ MESSAGE ACTIONS ═══
+        function copyCode(btn) {
+            var code = btn.closest('pre').querySelector('code').textContent;
+            copyToClipboard(code, 'Kode disalin!');
+        }
+
+        function copyMessage(index) {
+            copyToClipboard(messages[index].content, 'Pesan disalin!');
+        }
+
+        function speakMessage(index) {
+            speak(messages[index].content);
+        }
+
+        function regenMessage() {
+            if (messages.length < 2) return;
+            // Remove last AI message
+            messages.pop();
+            var lastUser = messages[messages.length - 1];
+            messages.pop();
+            
+            document.getElementById('input').value = lastUser.content;
+            onInput();
+            renderMessages();
+            sendMessage();
+        }
+
+        function copyToClipboard(text, msg) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showToast('✅ ' + msg);
+                }).catch(function() {
+                    fallbackCopy(text, msg);
+                });
+            } else {
+                fallbackCopy(text, msg);
+            }
+        }
+
+        function fallbackCopy(text, msg) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('✅ ' + msg);
+            } catch(e) {
+                showToast('❌ Gagal copy');
+            }
+            document.body.removeChild(ta);
+        }
+
+        // ═══ TYPING ═══
+        function showTyping() {
+            var el = document.createElement('div');
+            el.className = 'message ai';
+            el.id = 'typing';
+            el.innerHTML = '<div class="avatar">✦</div><div class="bubble"><div class="role">CLOSIWER</div><div class="typing"><span></span><span></span><span></span></div></div>';
+            document.getElementById('messages').appendChild(el);
+            scrollBottom();
+        }
+
+        function removeTyping() {
+            var el = document.getElementById('typing');
+            if (el) el.remove();
+        }
+
+        function scrollBottom() {
+            var area = document.getElementById('chatArea');
+            setTimeout(function() {
+                area.scrollTop = area.scrollHeight;
+            }, 50);
+        }
+
+        // ═══ EXPORT ═══
+        function exportChat() {
+            if (messages.length === 0) {
+                showToast('❌ Belum ada chat');
+                return;
+            }
+            
+            var text = '# CLOSIWER AI - Chat Export\n';
+            text += 'Tanggal: ' + new Date().toLocaleString('id-ID') + '\n\n---\n\n';
+            
+            for (var i = 0; i < messages.length; i++) {
+                var m = messages[i];
+                text += '## ' + (m.role === 'user' ? '👤 ANDA' : '🤖 CLOSIWER') + '\n\n';
+                text += m.content + '\n\n---\n\n';
+            }
+            
+            var blob = new Blob([text], { type: 'text/markdown' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'closiwer-chat-' + Date.now() + '.md';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📥 Chat di-export!');
+        }
+
+        // ═══ CLEAR CHAT ═══
+        function clearChat() {
+            if (messages.length === 0) return;
+            if (!confirm('Hapus semua chat?')) return;
+            
+            messages = [];
+            renderMessages();
+            document.getElementById('welcome').style.display = 'flex';
+            localStorage.removeItem('closiwer_chat_history');
+            showToast('🗑️ Chat dihapus');
+        }
+
+        // ═══ CHAT HISTORY ═══
+        function saveChatHistory() {
+            try {
+                localStorage.setItem('closiwer_chat_history', JSON.stringify(messages.slice(-50)));
+            } catch(e) {}
+        }
+
+        function loadChatHistory() {
+            try {
+                var saved = localStorage.getItem('closiwer_chat_history');
+                if (saved) {
+                    messages = JSON.parse(saved);
+                    if (messages.length > 0) {
+                        document.getElementById('welcome').style.display = 'none';
+                        renderMessages();
+                    }
+                }
+            } catch(e) {}
+        }
+
+        // ═══ DEV PANEL ═══
+        function openDev() {
+            document.getElementById('devModal').classList.add('show');
+            loadConfigToUI();
+        }
+
+        function closeDev() {
+            document.getElementById('devModal').classList.remove('show');
+        }
+
+        function loadConfigToUI() {
+            document.getElementById('provider').value = config.provider;
+            document.getElementById('apiKey').value = config.apiKey;
+            document.getElementById('model').value = config.model;
+            updateStatus();
+        }
+
+        function saveConfig() {
+            config.provider = document.getElementById('provider').value;
+            config.apiKey = document.getElementById('apiKey').value.trim();
+            config.model = document.getElementById('model').value.trim() || 'llama-3.1-8b-instant';
+
+            localStorage.setItem('closiwer_provider', config.provider);
+            localStorage.setItem('closiwer_key', config.apiKey);
+            localStorage.setItem('closiwer_model', config.model);
+
+            updateStatus();
+            showToast('✅ Tersimpan!');
+            closeDev();
+        }
+
+        function updateStatus() {
+            var statusText = document.getElementById('statusText');
+            var statusBox = document.getElementById('statusBox');
+
+            if (config.apiKey && config.apiKey.length > 10) {
+                statusText.textContent = 'API ACTIVE';
+                statusText.style.color = '#4ade80';
+                statusBox.textContent = '✓ API Active (' + config.provider + ' · ' + config.model + ')';
+                statusBox.className = 'status-box active';
+            } else {
+                statusText.textContent = 'SIMULATION';
+                statusText.style.color = '#fbbf24';
+                statusBox.textContent = 'Mode: Simulasi (Unlimited)';
+                statusBox.className = 'status-box';
+            }
+        }
+
+        // ═══ TOAST ═══
+        var toastTimeout;
+        function showToast(msg) {
+            var toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(function() {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // ═══ MODAL CLOSE ═══
+        document.getElementById('devModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDev();
+        });
+
+        console.log('CLOSIWER AI v2.0 ready! ✅');
+    </script>
+</body>
+  </html>
