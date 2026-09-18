@@ -269,7 +269,116 @@
         </div>
     </div>
                         </div>
-    
+    <!-- ═══ RECIPE GENERATOR PANEL ═══ -->
+<div class="modal" id="recipeModal">
+    <div class="modal-box" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>🍳 AI RECIPE GENERATOR</h3>
+            <button class="modal-close" onclick="closeModal('recipeModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <!-- Tabs -->
+            <div class="rc-tabs">
+                <button class="rc-tab active" onclick="rcSetTab('generate', this)">✨ Generate</button>
+                <button class="rc-tab" onclick="rcSetTab('favorites', this)">⭐ Favorit</button>
+            </div>
+
+            <!-- Generate Tab -->
+            <div class="rc-content active" data-rc-tab="generate">
+                <div class="field">
+                    <label>🥕 Bahan yang Ada</label>
+                    <textarea id="rcIngredients" class="rc-textarea" placeholder="contoh: ayam, bawang merah, bawang putih, cabai, kecap manis, nasi..." rows="3"></textarea>
+                    <div class="rc-hint">💡 Pisahkan bahan dengan koma atau enter</div>
+                </div>
+
+                <div class="rc-row">
+                    <div class="field">
+                        <label>🍽️ Jenis Masakan</label>
+                        <select id="rcCuisine">
+                            <option value="indonesia" selected>🇮🇩 Indonesia</option>
+                            <option value="asia">🍜 Asia (Chinese/Japanese/Korean)</option>
+                            <option value="western">🍔 Western</option>
+                            <option value="italia">🍝 Italia</option>
+                            <option value="timur-tengah">🥙 Timur Tengah</option>
+                            <option value="dessert">🍰 Dessert</option>
+                            <option value="sehat">🥗 Sehat & Diet</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>⏱️ Waktu Masak</label>
+                        <select id="rcTime">
+                            <option value="cepat">⚡ Cepat (&lt;15 menit)</option>
+                            <option value="sedang" selected>⏱️ Sedang (15-30 menit)</option>
+                            <option value="lama">🕐 Lama (&gt;30 menit)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="rc-row">
+                    <div class="field">
+                        <label>🎚️ Tingkat Kesulitan</label>
+                        <select id="rcDifficulty">
+                            <option value="mudah" selected>😊 Mudah (Pemula)</option>
+                            <option value="sedang">😐 Sedang</option>
+                            <option value="sulit">😤 Sulit (Pro)</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>🍴 Porsi</label>
+                        <select id="rcServings">
+                            <option value="1">1 orang</option>
+                            <option value="2" selected>2 orang</option>
+                            <option value="4">4 orang</option>
+                            <option value="6">6 orang</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>🚫 Filter Diet</label>
+                    <div class="rc-diet-chips">
+                        <button class="rc-diet-chip" onclick="rcToggleDiet(this, 'vegetarian')">🥬 Vegetarian</button>
+                        <button class="rc-diet-chip" onclick="rcToggleDiet(this, 'vegan')">🌱 Vegan</button>
+                        <button class="rc-diet-chip" onclick="rcToggleDiet(this, 'halal')">☪️ Halal</button>
+                        <button class="rc-diet-chip" onclick="rcToggleDiet(this, 'keto')">🥑 Keto</button>
+                        <button class="rc-diet-chip" onclick="rcToggleDiet(this, 'gluten-free')">🌾 Gluten-Free</button>
+                        <button class="rc-diet-chip" onclick="rcToggleDiet(this, 'low-carb')">🥩 Low-Carb</button>
+                    </div>
+                </div>
+
+                <div class="rc-actions">
+                    <button class="rc-generate-btn" onclick="rcGenerate()">🤖 Generate Resep</button>
+                    <button class="rc-random-btn" onclick="rcRandom()">🎲 Random</button>
+                </div>
+
+                <div class="rc-result" id="rcResult" style="display: none;"></div>
+            </div>
+
+            <!-- Favorites Tab -->
+            <div class="rc-content" data-rc-tab="favorites">
+                <div class="rc-favorites-header">
+                    <span>⭐ Resep Tersimpan</span>
+                    <button class="rc-clear-btn" onclick="rcClearFavorites()">🗑️ Clear All</button>
+                </div>
+                <div class="rc-favorites-list" id="rcFavoritesList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ RECIPE DETAIL MODAL ═══ -->
+<div class="modal" id="recipeDetailModal">
+    <div class="modal-box" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>📖 DETAIL RESEP</h3>
+            <button class="modal-close" onclick="closeModal('recipeDetailModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="recipeDetailContent"></div>
+        </div>
+    </div>
+</div>
+
     <!-- ═══ MODALS ═══ -->
     <div class="modal" id="devModal">
         <div class="modal-box">
