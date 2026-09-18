@@ -71,6 +71,7 @@
             <button class="tool-chip" onclick="openAvatarGen()">👤 Avatar</button>
             <button class="tool-chip" onclick="openRecipeGenerator()">🍳 Recipe</button>
             <button class="tool-chip" onclick="openFinanceTracker()">💰 Finance</button>
+            <button class="tool-chip" onclick="openCodeReviewer()">💻 Code</button>
         </nav>
 
         <!-- CHAT AREA -->
@@ -546,6 +547,77 @@
         </div>
     </div>
                     </div>
+
+        <!-- ═══ CODE REVIEWER PANEL ═══ -->
+    <div class="modal" id="codeReviewerModal">
+        <div class="modal-box" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>💻 AI CODE REVIEWER</h3>
+                <button class="modal-close" onclick="closeModal('codeReviewerModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Toolbar -->
+                <div class="cr-toolbar">
+                    <select id="crLanguage" class="cr-lang-select">
+                        <option value="javascript">📜 JavaScript</option>
+                        <option value="typescript">📘 TypeScript</option>
+                        <option value="python">🐍 Python</option>
+                        <option value="php">🐘 PHP</option>
+                        <option value="java">☕ Java</option>
+                        <option value="go">🐹 Go</option>
+                        <option value="rust">🦀 Rust</option>
+                        <option value="cpp">⚙️ C++</option>
+                        <option value="csharp">🎯 C#</option>
+                        <option value="html">🌐 HTML</option>
+                        <option value="css">🎨 CSS</option>
+                        <option value="sql">🗃️ SQL</option>
+                        <option value="bash">💻 Bash/Shell</option>
+                    </select>
+                    <button class="cr-tool-btn" onclick="crLoadSample()" title="Contoh Kode">📄 Sample</button>
+                    <button class="cr-tool-btn" onclick="crUpload()" title="Upload File">📎 Upload</button>
+                    <button class="cr-tool-btn" onclick="crClear()" title="Bersihkan">🗑️ Clear</button>
+                    <input type="file" id="crFileInput" style="display:none" onchange="crHandleUpload(event)" accept=".js,.jsx,.ts,.tsx,.py,.php,.java,.go,.rs,.cpp,.cs,.html,.css,.sql,.sh,.txt,.md">
+                </div>
+
+                <!-- Editor -->
+                <div class="cr-editor-wrap">
+                    <div class="cr-line-numbers" id="crLineNumbers">1</div>
+                    <textarea id="crCodeInput" class="cr-editor" placeholder="// Paste code lu di sini...
+// Contoh:
+function sum(a, b) {
+    return a + b;
+}
+console.log(sum(5, 10));" spellcheck="false" oninput="crUpdateLineNumbers()" onscroll="crSyncScroll()"></textarea>
+                </div>
+
+                <!-- Review Options -->
+                <div class="cr-options">
+                    <label class="cr-checkbox">
+                        <input type="checkbox" id="crOptBug" checked>
+                        <span>🐛 Deteksi Bug</span>
+                    </label>
+                    <label class="cr-checkbox">
+                        <input type="checkbox" id="crOptPerf" checked>
+                        <span>⚡ Optimasi</span>
+                    </label>
+                    <label class="cr-checkbox">
+                        <input type="checkbox" id="crOptSecurity" checked>
+                        <span>🔒 Security</span>
+                    </label>
+                    <label class="cr-checkbox">
+                        <input type="checkbox" id="crOptStyle" checked>
+                        <span>✨ Best Practice</span>
+                    </label>
+                </div>
+
+                <!-- Submit -->
+                <button class="cr-submit-btn" onclick="crReviewCode()">🔍 Review Code</button>
+
+                <!-- Result -->
+                <div class="cr-result" id="crResult" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
     
     <!-- ═══ MODALS ═══ -->
     <div class="modal" id="devModal">
