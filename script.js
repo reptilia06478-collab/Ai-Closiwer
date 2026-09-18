@@ -156,6 +156,10 @@ function init() {
     initParticles();
     runLoader();
     updateTokenCount();
+}
+
+// ═══ START APPLICATION ═══
+init();
     
     logConsole('info', `[CLOSIWER] v${CLOSIWER.version} initialized`);
     logConsole('success', `[ENGINE] ${CLOSIWER.engine} ready`);
