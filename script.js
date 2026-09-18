@@ -2164,3 +2164,510 @@ setTimeout(function() {
 }, 1000);
 
 console.log('🍳 FITUR v5.1: Recipe Generator loaded!');
+/* ═══════════════════════════════════════
+   FITUR #4: AI FINANCE TRACKER
+═══════════════════════════════════════ */
+
+var finTransactions = JSON.parse(localStorage.getItem('closiwer_finance') || '[]');
+var finBudgets = JSON.parse(localStorage.getItem('closiwer_budgets') || '{}');
+var finCurrentType = 'expense';
+
+function finSetTab(tab, el) {
+    document.querySelectorAll('.fin-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.fin-content').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    var content = document.querySelector('.fin-content[data-fin-tab="' + tab + '"]');
+    if (content) content.classList.add('active');
+    if (tab === 'history') finRenderHistory();
+    if (tab === 'stats') finRenderStats();
+    if (tab === 'budget') finRenderBudget();
+}
+
+function finSetType(type, el) {
+    finCurrentType = type;
+    document.querySelectorAll('.fin-type-btn').forEach(function(b) { b.classList.remove('active'); });
+    el.classList.add('active');
+}
+
+function finSetAmount(amount) {
+    document.getElementById('finAmount').value = amount;
+}
+
+/* ═══ INIT ═══ */
+function finInit() {
+    /* Set today's date default */
+    var dateInput = document.getElementById('finDate');
+    if (dateInput && !dateInput.value) {
+        var today = new Date();
+        var yyyy = today.getFullYear();
+        var mm = String(today.getMonth() + 1).padStart(2, '0');
+        var dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = yyyy + '-' + mm + '-' + dd;
+    }
+    finUpdateSummary();
+}
+
+/* ═══ FORMAT ═══ */
+function finFormatRp(num) {
+    if (num >= 1000000) return 'Rp ' + (num / 1000000).toFixed(1) + 'Jt';
+    if (num >= 1000) return 'Rp ' + (num / 1000).toFixed(0) + 'K';
+    return 'Rp ' + num.toLocaleString('id-ID');
+}
+
+function finFormatRpFull(num) {
+    return 'Rp ' + num.toLocaleString('id-ID');
+}
+
+/* ═══ ADD TRANSACTION ═══ */
+function finAddTransaction() {
+    var amount = parseFloat(document.getElementById('finAmount').value);
+    var category = document.getElementById('finCategory').value;
+    var date = document.getElementById('finDate').value;
+    var note = document.getElementById('finNote').value.trim();
+    
+    if (!amount || amount <= 0) { showToast('⚠️ Masukkan jumlah yang valid'); return; }
+    if (!date) { showToast('⚠️ Pilih tanggal'); return; }
+    
+    var trans = {
+        id: 'fin_' + Date.now(),
+        type: finCurrentType,
+        amount: amount,
+        category: category,
+        date: date,
+        note: note,
+        timestamp: Date.now()
+    };
+    
+    finTransactions.unshift(trans);
+    finSave();
+    
+    /* Reset form */
+    document.getElementById('finAmount').value = '';
+    document.getElementById('finNote').value = '';
+    
+    finUpdateSummary();
+    showToast((finCurrentType === 'expense' ? '📉' : '📈') + ' Transaksi disimpan!');
+    
+    /* Check budget if expense */
+    if (finCurrentType === 'expense') finCheckBudget(category);
+}
+
+function finSave() {
+    localStorage.setItem('closiwer_finance', JSON.stringify(finTransactions));
+    localStorage.setItem('closiwer_budgets', JSON.stringify(finBudgets));
+}
+
+/* ═══ SUMMARY ═══ */
+function finUpdateSummary() {
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    
+    var balance = 0;
+    var monthIncome = 0;
+    var monthExpense = 0;
+    
+    for (var i = 0; i < finTransactions.length; i++) {
+        var t = finTransactions[i];
+        var tTime = new Date(t.date).getTime();
+        if (t.type === 'income') {
+            balance += t.amount;
+            if (tTime >= monthStart) monthIncome += t.amount;
+        } else {
+            balance -= t.amount;
+            if (tTime >= monthStart) monthExpense += t.amount;
+        }
+    }
+    
+    var elB = document.getElementById('finBalance');
+    var elI = document.getElementById('finIncome');
+    var elE = document.getElementById('finExpense');
+    if (elB) elB.textContent = finFormatRp(balance);
+    if (elI) elI.textContent = finFormatRp(monthIncome);
+    if (elE) elE.textContent = finFormatRp(monthExpense);
+    
+    var elBs = document.getElementById('finBalanceSub');
+    if (elBs) elBs.textContent = finTransactions.length + ' transaksi';
+    var elIs = document.getElementById('finIncomeSub');
+    if (elIs) elIs.textContent = now.toLocaleString('id-ID', { month: 'long' });
+    var elEs = document.getElementById('finExpenseSub');
+    if (elEs) elEs.textContent = now.toLocaleString('id-ID', { month: 'long' });
+}
+
+/* ═══ HISTORY ═══ */
+function finRenderHistory() {
+    var range = document.getElementById('finFilterRange').value;
+    var typeFilter = document.getElementById('finFilterType').value;
+    var list = document.getElementById('finHistoryList');
+    
+    var now = new Date();
+    var startTime = 0;
+    
+    if (range === 'today') {
+        startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    } else if (range === 'week') {
+        startTime = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+    } else if (range === 'month') {
+        startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    }
+    
+    var filtered = finTransactions.filter(function(t) {
+        var tTime = new Date(t.date).getTime();
+        if (tTime < startTime) return false;
+        if (typeFilter !== 'all' && t.type !== typeFilter) return false;
+        return true;
+    });
+    
+    if (filtered.length === 0) {
+        list.innerHTML = '<div class="rc-empty"><div class="rc-empty-icon">📜</div>Belum ada transaksi.<br><br>Tambah transaksi dulu di tab ➕ Tambah!</div>';
+        return;
+    }
+    
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+        var t = filtered[i];
+        var dateObj = new Date(t.date);
+        var dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        var icon = t.category.split(' ')[0] || '💵';
+        var categoryText = t.category.replace(/^[^\s]+\s/, '') || 'Lainnya';
+        
+        html += '<div class="fin-trans">';
+        html += '<div class="fin-trans-icon ' + t.type + '">' + icon + '</div>';
+        html += '<div class="fin-trans-info">';
+        html += '<div class="fin-trans-cat">' + escapeHtml(categoryText) + '</div>';
+        if (t.note) html += '<div class="fin-trans-note">' + escapeHtml(t.note) + '</div>';
+        html += '<div class="fin-trans-date">' + dateStr + '</div>';
+        html += '</div>';
+        html += '<div class="fin-trans-amount ' + t.type + '">' + (t.type === 'income' ? '+' : '-') + finFormatRp(t.amount) + '</div>';
+        html += '<div class="fin-trans-actions">';
+        html += '<button class="fin-trans-btn" onclick="finEditTrans(\'' + t.id + '\')">✏️</button>';
+        html += '<button class="fin-trans-btn" onclick="finDeleteTrans(\'' + t.id + '\')">🗑️</button>';
+        html += '</div>';
+        html += '</div>';
+    }
+    list.innerHTML = html;
+}
+
+function finDeleteTrans(id) {
+    if (!confirm('Hapus transaksi ini?')) return;
+    finTransactions = finTransactions.filter(function(t) { return t.id !== id; });
+    finSave();
+    finUpdateSummary();
+    finRenderHistory();
+    showToast('🗑️ Transaksi dihapus');
+}
+
+function finEditTrans(id) {
+    var t = finTransactions.find(function(x) { return x.id === id; });
+    if (!t) return;
+    document.getElementById('finEditId').value = id;
+    document.getElementById('finEditAmount').value = t.amount;
+    document.getElementById('finEditCategory').value = t.category;
+    document.getElementById('finEditNote').value = t.note || '';
+    document.getElementById('finEditModal').classList.add('show');
+}
+
+function finSaveEdit() {
+    var id = document.getElementById('finEditId').value;
+    var amount = parseFloat(document.getElementById('finEditAmount').value);
+    if (!amount || amount <= 0) { showToast('⚠️ Jumlah invalid'); return; }
+    
+    var t = finTransactions.find(function(x) { return x.id === id; });
+    if (t) {
+        t.amount = amount;
+        t.category = document.getElementById('finEditCategory').value;
+        t.note = document.getElementById('finEditNote').value;
+        finSave();
+        finUpdateSummary();
+        finRenderHistory();
+        closeModal('finEditModal');
+        showToast('✅ Transaksi diupdate');
+    }
+}
+
+/* ═══ STATS ═══ */
+function finRenderStats() {
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    
+    var monthTrans = finTransactions.filter(function(t) {
+        return new Date(t.date).getTime() >= monthStart;
+    });
+    
+    var expenses = monthTrans.filter(function(t) { return t.type === 'expense'; });
+    var incomes = monthTrans.filter(function(t) { return t.type === 'income'; });
+    
+    var totalExp = expenses.reduce(function(s, t) { return s + t.amount; }, 0);
+    var totalInc = incomes.reduce(function(s, t) { return s + t.amount; }, 0);
+    var avgExp = expenses.length > 0 ? totalExp / expenses.length : 0;
+    var biggestExp = expenses.length > 0 ? Math.max.apply(null, expenses.map(function(t) { return t.amount; })) : 0;
+    
+    var grid = document.getElementById('finStatsGrid');
+    grid.innerHTML = 
+        '<div class="fin-stat-card"><div class="fin-stat-val">' + expenses.length + '</div><div class="fin-stat-label">Transaksi</div></div>' +
+        '<div class="fin-stat-card"><div class="fin-stat-val">' + finFormatRp(avgExp) + '</div><div class="fin-stat-label">Rata-rata</div></div>' +
+        '<div class="fin-stat-card"><div class="fin-stat-val">' + finFormatRp(biggestExp) + '</div><div class="fin-stat-label">Terbesar</div></div>' +
+        '<div class="fin-stat-card"><div class="fin-stat-val">' + finFormatRp(totalInc - totalExp) + '</div><div class="fin-stat-label">Selisih</div></div>';
+    
+    /* Chart 7 hari */
+    var chart = document.getElementById('finChart');
+    var days = [];
+    var dayLabels = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    for (var i = 6; i >= 0; i--) {
+        var d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        var dStart = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        var dEnd = dStart + 24 * 60 * 60 * 1000;
+        var dayTotal = expenses.filter(function(t) {
+            var tTime = new Date(t.date).getTime();
+            return tTime >= dStart && tTime < dEnd;
+        }).reduce(function(s, t) { return s + t.amount; }, 0);
+        days.push({ label: dayLabels[d.getDay()], amount: dayTotal });
+    }
+    
+    var maxAmount = Math.max.apply(null, days.map(function(d) { return d.amount; })) || 1;
+    var chartHtml = '';
+    for (var i = 0; i < days.length; i++) {
+        var h = (days[i].amount / maxAmount) * 100;
+        chartHtml += '<div class="fin-chart-bar-wrap">';
+        chartHtml += '<div class="fin-chart-bar" style="height: ' + h + '%;"></div>';
+        chartHtml += '<div class="fin-chart-label">' + days[i].label + '</div>';
+        chartHtml += '</div>';
+    }
+    chart.innerHTML = chartHtml;
+    
+    /* Top categories */
+    var catTotals = {};
+    for (var i = 0; i < expenses.length; i++) {
+        var cat = expenses[i].category;
+        catTotals[cat] = (catTotals[cat] || 0) + expenses[i].amount;
+    }
+    
+    var sorted = Object.keys(catTotals).sort(function(a, b) { return catTotals[b] - catTotals[a]; }).slice(0, 5);
+    var topCatHtml = '';
+    if (sorted.length === 0) {
+        topCatHtml = '<div class="rc-empty" style="padding: 20px;"><div style="font-size: 12px;">Belum ada pengeluaran bulan ini</div></div>';
+    } else {
+        for (var i = 0; i < sorted.length; i++) {
+            var cat = sorted[i];
+            var amount = catTotals[cat];
+            var pct = (amount / totalExp) * 100;
+            topCatHtml += '<div class="fin-top-cat">';
+            topCatHtml += '<div class="fin-top-cat-rank">' + (i + 1) + '</div>';
+            topCatHtml += '<div style="flex: 1;"><div class="fin-top-cat-name">' + escapeHtml(cat) + '</div>';
+            topCatHtml += '<div class="fin-top-cat-bar" style="width: ' + pct + '%;"></div></div>';
+            topCatHtml += '<div class="fin-top-cat-amount">' + finFormatRp(amount) + '</div>';
+            topCatHtml += '</div>';
+        }
+    }
+    document.getElementById('finTopCategories').innerHTML = topCatHtml;
+}
+
+/* ═══ BUDGET ═══ */
+function finRenderBudget() {
+    var categories = ['🍔 Makanan', '🚗 Transport', '🛍️ Belanja', '🎮 Hiburan', '📱 Pulsa/Internet', '💡 Tagihan', '💊 Kesehatan', '📚 Pendidikan', '🏠 Rumah', '🎁 Hadiah', '💵 Lainnya'];
+    
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    
+    var html = '';
+    for (var i = 0; i < categories.length; i++) {
+        var cat = categories[i];
+        var budget = finBudgets[cat] || 0;
+        var spent = finTransactions.filter(function(t) {
+            return t.type === 'expense' && t.category === cat && new Date(t.date).getTime() >= monthStart;
+        }).reduce(function(s, t) { return s + t.amount; }, 0);
+        
+        var pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+        var statusClass = pct >= 90 ? 'danger' : (pct >= 70 ? 'warning' : '');
+        
+        html += '<div class="fin-budget-item">';
+        html += '<div class="fin-budget-header">';
+        html += '<div class="fin-budget-name">' + escapeHtml(cat) + '</div>';
+        html += '<input type="number" class="fin-budget-input" placeholder="0" value="' + (budget || '') + '" onchange="finSetBudget(\'' + cat.replace(/'/g, "\\'") + '\', this.value)">';
+        html += '</div>';
+        if (budget > 0) {
+            html += '<div class="fin-budget-bar"><div class="fin-budget-fill ' + statusClass + '" style="width: ' + pct + '%"></div></div>';
+            html += '<div class="fin-budget-status"><span>' + finFormatRp(spent) + ' / ' + finFormatRp(budget) + '</span><span>' + pct.toFixed(0) + '%</span></div>';
+        } else {
+            html += '<div class="fin-budget-status"><span>Belum di-set</span><span>' + finFormatRp(spent) + ' terpakai</span></div>';
+        }
+        html += '</div>';
+    }
+    document.getElementById('finBudgetList').innerHTML = html;
+}
+
+function finSetBudget(category, value) {
+    var num = parseFloat(value) || 0;
+    if (num <= 0) delete finBudgets[category];
+    else finBudgets[category] = num;
+    finSave();
+    finRenderBudget();
+    showToast('💾 Budget disimpan');
+}
+
+function finCheckBudget(category) {
+    var budget = finBudgets[category];
+    if (!budget) return;
+    
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    var spent = finTransactions.filter(function(t) {
+        return t.type === 'expense' && t.category === category && new Date(t.date).getTime() >= monthStart;
+    }).reduce(function(s, t) { return s + t.amount; }, 0);
+    
+    var pct = (spent / budget) * 100;
+    if (pct >= 100) showToast('🚨 BUDGET OVER! ' + category + ' udah ' + pct.toFixed(0) + '% dari limit!');
+    else if (pct >= 80) showToast('⚠️ Warning: ' + category + ' udah ' + pct.toFixed(0) + '% dari budget!');
+}
+
+/* ═══ AI INSIGHTS ═══ */
+function finGenerateAIInsight() {
+    var result = document.getElementById('finAIResult');
+    
+    if (finTransactions.length < 3) {
+        result.innerHTML = '<div class="rc-empty"><div class="rc-empty-icon">📊</div>Butuh minimal 3 transaksi untuk AI analisis.<br><br>Tambah transaksi dulu!</div>';
+        return;
+    }
+    
+    result.innerHTML = '<div class="rc-loading"><div class="rc-spinner"></div><div style="font-size: 12px; color: var(--text-muted);">AI menganalisis keuangan lu... 🤖</div></div>';
+    
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    var monthTrans = finTransactions.filter(function(t) { return new Date(t.date).getTime() >= monthStart; });
+    
+    var totalIncome = monthTrans.filter(function(t) { return t.type === 'income'; }).reduce(function(s, t) { return s + t.amount; }, 0);
+    var totalExpense = monthTrans.filter(function(t) { return t.type === 'expense'; }).reduce(function(s, t) { return s + t.amount; }, 0);
+    
+    var catTotals = {};
+    monthTrans.filter(function(t) { return t.type === 'expense'; }).forEach(function(t) {
+        catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+    });
+    
+    var summary = 'Total pemasukan bulan ini: Rp ' + totalIncome + '\n';
+    summary += 'Total pengeluaran bulan ini: Rp ' + totalExpense + '\n';
+    summary += 'Saldo: Rp ' + (totalIncome - totalExpense) + '\n\n';
+    summary += 'Pengeluaran per kategori:\n';
+    for (var cat in catTotals) {
+        summary += '- ' + cat + ': Rp ' + catTotals[cat] + '\n';
+    }
+    summary += '\nTotal transaksi: ' + monthTrans.length;
+    
+    var apiKey = (typeof config !== 'undefined' && config.apiKey) ? config.apiKey : '';
+    
+    if (!apiKey || apiKey.length < 10) {
+        /* Fallback: local insight */
+        setTimeout(function() {
+            result.innerHTML = finLocalInsight(totalIncome, totalExpense, catTotals);
+        }, 1200);
+        return;
+    }
+    
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+            model: config.model || 'llama-3.1-8b-instant',
+            messages: [
+                { role: 'system', content: 'Kamu adalah financial advisor profesional Indonesia. Analisis keuangan dengan ramah, kasih 3-4 insight actionable dalam Bahasa Indonesia. Format pakai HTML sederhana dengan <h4>, <ul>, <li>, <strong>. Jangan pakai markdown.' },
+                { role: 'user', content: 'Analisis keuangan saya:\n\n' + summary + '\n\nKasih insight: 1) Kondisi keuangan, 2) Yang perlu diperbaiki, 3) Tips hemat, 4) Target yang realistis.' }
+            ],
+            temperature: 0.7,
+            max_tokens: 1000
+        })
+    })
+    .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+    })
+    .then(function(data) {
+        result.innerHTML = data.choices[0].message.content;
+    })
+    .catch(function(err) {
+        console.error('[AI Insight]', err);
+        result.innerHTML = finLocalInsight(totalIncome, totalExpense, catTotals);
+    });
+}
+
+function finLocalInsight(income, expense, catTotals) {
+    var balance = income - expense;
+    var rate = income > 0 ? (expense / income) * 100 : 0;
+    
+    var topCat = '';
+    var topAmount = 0;
+    for (var cat in catTotals) {
+        if (catTotals[cat] > topAmount) { topAmount = catTotals[cat]; topCat = cat; }
+    }
+    
+    var html = '<h4>📊 Analisis Keuangan</h4>';
+    
+    if (balance > 0) {
+        html += '<p>✅ <strong>Good!</strong> Keuangan lu surplus <strong>Rp ' + balance.toLocaleString('id-ID') + '</strong> bulan ini. Pertahankan!</p>';
+    } else if (balance < 0) {
+        html += '<p>🚨 <strong>Warning!</strong> Lu deficit <strong>Rp ' + Math.abs(balance).toLocaleString('id-ID') + '</strong>. Perlu kurangi pengeluaran!</p>';
+    } else {
+        html += '<p>⚖️ Pas-pasan, income = expense.</p>';
+    }
+    
+    if (rate > 0) {
+        html += '<h4>💡 Yang Perlu Diperbaiki</h4>';
+        html += '<ul>';
+        if (rate > 90) html += '<li>Rasio pengeluaran/income lu <strong>' + rate.toFixed(0) + '%</strong> — terlalu tinggi! Target ideal: 70-80%</li>';
+        else if (rate > 70) html += '<li>Rasio lu <strong>' + rate.toFixed(0) + '%</strong> — lumayan, tapi bisa lebih baik. Target: 70%</li>';
+        else html += '<li>Rasio lu <strong>' + rate.toFixed(0) + '%</strong> — mantap! 👍</li>';
+        if (topCat) html += '<li>Kategori paling boros: <strong>' + topCat + '</strong> (Rp ' + topAmount.toLocaleString('id-ID') + ')</li>';
+        html += '</ul>';
+    }
+    
+    html += '<h4>💰 Tips Hemat</h4>';
+    html += '<ul>';
+    html += '<li>Terapkan <strong>aturan 50/30/20</strong>: 50% kebutuhan, 30% keinginan, 20% tabungan</li>';
+    html += '<li>Sebelum beli, tunggu <strong>24 jam</strong> untuk barang non-urgent</li>';
+    html += '<li>Catat pengeluaran <strong>real-time</strong> biar aware</li>';
+    if (topCat && topAmount > 50000) html += '<li>Kurangi ' + topCat + ' minggu depan, coba hemat Rp ' + Math.round(topAmount * 0.2).toLocaleString('id-ID') + '</li>';
+    html += '</ul>';
+    
+    html += '<h4>🎯 Target Realistis</h4>';
+    html += '<ul>';
+    html += '<li>Target tabungan: <strong>Rp ' + Math.round(income * 0.2).toLocaleString('id-ID') + '</strong> (20% dari income)</li>';
+    html += '<li>Set budget kategori <strong>' + (topCat || 'terbesar') + '</strong> maksimal Rp ' + Math.round((catTotals[topCat] || 100000) * 0.8).toLocaleString('id-ID') + '</li>';
+    html += '<li>Review keuangan tiap <strong>minggu</strong></li>';
+    html += '</ul>';
+    
+    html += '<p style="font-size: 11px; color: var(--text-muted); margin-top: 12px;">💡 Isi API key di DEV untuk AI insight yang lebih mendalam</p>';
+    
+    return html;
+}
+
+/* ═══ QUICK ACCESS ═══ */
+function openFinanceTracker() {
+    var modal = document.getElementById('financeModal');
+    if (modal) {
+        modal.classList.add('show');
+        finInit();
+        finUpdateSummary();
+        finRenderHistory();
+    }
+}
+
+/* ═══ AUTO-LOAD ═══ */
+setTimeout(function() {
+    finInit();
+    finUpdateSummary();
+}, 1200);
+
+/* ═══ RENDER ULANG saat modal dibuka ═══ */
+document.addEventListener('DOMContentLoaded', function() {
+    var finModal = document.getElementById('financeModal');
+    if (finModal) {
+        var observer = new MutationObserver(function() {
+            if (finModal.classList.contains('show')) {
+                finUpdateSummary();
+            }
+        });
+        observer.observe(finModal, { attributes: true });
+    }
+});
+
+console.log('💰 FITUR v5.1: Finance Tracker loaded!');
