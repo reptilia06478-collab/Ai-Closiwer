@@ -16,9 +16,9 @@ const state = {
     currentChatId: null,
     isTyping: false,
     currentModel: localStorage.getItem('closiwer_model') || 'dev-elite',
-    apiKey: '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',
-apiProvider: 'groq',
-apiModel: 'llama-3.3-70b-versatile',
+    apiKey: localStorage.getItem('closiwer_apiKey') || '',
+apiProvider: localStorage.getItem('closiwer_apiProvider') || 'groq',
+apiModel: localStorage.getItem('closiwer_apiModel') || 'llama-3.3-70b-versatile',
     stats: {
         messages: 0,
         tokens: 0,
