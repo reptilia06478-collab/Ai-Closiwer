@@ -70,6 +70,7 @@
             <button class="tool-chip" onclick="openColorPalette()">🎨 Palette</button>
             <button class="tool-chip" onclick="openAvatarGen()">👤 Avatar</button>
             <button class="tool-chip" onclick="openRecipeGenerator()">🍳 Recipe</button>
+            <button class="tool-chip" onclick="openFinanceTracker()">💰 Finance</button>
         </nav>
 
         <!-- CHAT AREA -->
@@ -380,6 +381,172 @@
     </div>
 </div>
 
+    <!-- ═══ FINANCE TRACKER PANEL ═══ -->
+<div class="modal" id="financeModal">
+    <div class="modal-box" style="max-width: 750px;">
+        <div class="modal-header">
+            <h3>💰 AI FINANCE TRACKER</h3>
+            <button class="modal-close" onclick="closeModal('financeModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <!-- Summary Cards -->
+            <div class="fin-summary">
+                <div class="fin-card balance">
+                    <div class="fin-card-label">💰 Saldo</div>
+                    <div class="fin-card-value" id="finBalance">Rp 0</div>
+                    <div class="fin-card-sub" id="finBalanceSub">Total balance</div>
+                </div>
+                <div class="fin-card income">
+                    <div class="fin-card-label">📈 Pemasukan</div>
+                    <div class="fin-card-value" id="finIncome">Rp 0</div>
+                    <div class="fin-card-sub" id="finIncomeSub">Bulan ini</div>
+                </div>
+                <div class="fin-card expense">
+                    <div class="fin-card-label">📉 Pengeluaran</div>
+                    <div class="fin-card-value" id="finExpense">Rp 0</div>
+                    <div class="fin-card-sub" id="finExpenseSub">Bulan ini</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="fin-tabs">
+                <button class="fin-tab active" onclick="finSetTab('add', this)">➕ Tambah</button>
+                <button class="fin-tab" onclick="finSetTab('history', this)">📜 Riwayat</button>
+                <button class="fin-tab" onclick="finSetTab('stats', this)">📊 Statistik</button>
+                <button class="fin-tab" onclick="finSetTab('budget', this)">🎯 Budget</button>
+                <button class="fin-tab" onclick="finSetTab('ai', this)">🤖 AI Insights</button>
+            </div>
+
+            <!-- Add Tab -->
+            <div class="fin-content active" data-fin-tab="add">
+                <div class="field">
+                    <label>💵 Jenis Transaksi</label>
+                    <div class="fin-type-toggle">
+                        <button class="fin-type-btn active" onclick="finSetType('expense', this)">📉 Pengeluaran</button>
+                        <button class="fin-type-btn" onclick="finSetType('income', this)">📈 Pemasukan</button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>💵 Jumlah (Rupiah)</label>
+                    <div class="fin-amount-wrap">
+                        <span class="fin-currency">Rp</span>
+                        <input type="number" id="finAmount" class="fin-amount" placeholder="0" min="0" step="1000">
+                    </div>
+                    <div class="fin-quick-amounts">
+                        <button onclick="finSetAmount(10000)">10K</button>
+                        <button onclick="finSetAmount(25000)">25K</button>
+                        <button onclick="finSetAmount(50000)">50K</button>
+                        <button onclick="finSetAmount(100000)">100K</button>
+                        <button onclick="finSetAmount(250000)">250K</button>
+                    </div>
+                </div>
+
+                <div class="fin-row">
+                    <div class="field">
+                        <label>🏷️ Kategori</label>
+                        <select id="finCategory">
+                            <option value="🍔 Makanan">🍔 Makanan</option>
+                            <option value="🚗 Transport">🚗 Transport</option>
+                            <option value="🛍️ Belanja">🛍️ Belanja</option>
+                            <option value="🎮 Hiburan">🎮 Hiburan</option>
+                            <option value="📱 Pulsa/Internet">📱 Pulsa/Internet</option>
+                            <option value="💡 Tagihan">💡 Tagihan</option>
+                            <option value="💊 Kesehatan">💊 Kesehatan</option>
+                            <option value="📚 Pendidikan">📚 Pendidikan</option>
+                            <option value="🏠 Rumah">🏠 Rumah</option>
+                            <option value="🎁 Hadiah">🎁 Hadiah</option>
+                            <option value="💼 Gaji">💼 Gaji</option>
+                            <option value="💰 Bonus">💰 Bonus</option>
+                            <option value="💵 Lainnya">💵 Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>📅 Tanggal</label>
+                        <input type="date" id="finDate">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>📝 Catatan (opsional)</label>
+                    <input type="text" id="finNote" placeholder="contoh: makan siang di warung">
+                </div>
+
+                <button class="fin-add-btn" onclick="finAddTransaction()">💾 Simpan Transaksi</button>
+            </div>
+
+            <!-- History Tab -->
+            <div class="fin-content" data-fin-tab="history">
+                <div class="fin-filter-row">
+                    <select id="finFilterRange" onchange="finRenderHistory()">
+                        <option value="all">📅 Semua</option>
+                        <option value="today" selected>Hari Ini</option>
+                        <option value="week">7 Hari</option>
+                        <option value="month">Bulan Ini</option>
+                    </select>
+                    <select id="finFilterType" onchange="finRenderHistory()">
+                        <option value="all">Semua Tipe</option>
+                        <option value="expense">📉 Pengeluaran</option>
+                        <option value="income">📈 Pemasukan</option>
+                    </select>
+                </div>
+                <div class="fin-history-list" id="finHistoryList"></div>
+            </div>
+
+            <!-- Stats Tab -->
+            <div class="fin-content" data-fin-tab="stats">
+                <div class="fin-stats-grid" id="finStatsGrid"></div>
+                <div class="fin-chart-title">📊 Pengeluaran 7 Hari Terakhir</div>
+                <div class="fin-chart" id="finChart"></div>
+                <div class="fin-chart-title">🏆 Top 5 Kategori</div>
+                <div class="fin-top-categories" id="finTopCategories"></div>
+            </div>
+
+            <!-- Budget Tab -->
+            <div class="fin-content" data-fin-tab="budget">
+                <div class="fin-budget-info">
+                    💡 Set budget bulanan untuk tiap kategori. Kami bakal ingetin kalau lu udah mendekati limit!
+                </div>
+                <div class="fin-budget-list" id="finBudgetList"></div>
+            </div>
+
+            <!-- AI Insights Tab -->
+            <div class="fin-content" data-fin-tab="ai">
+                <button class="fin-ai-btn" onclick="finGenerateAIInsight()">🤖 Generate AI Insights</button>
+                <div class="fin-ai-result" id="finAIResult">
+                    <div class="rc-empty"><div class="rc-empty-icon">🤖</div>Klik tombol di atas untuk AI analisis keuangan lu!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ FINANCE EDIT MODAL ═══ -->
+<div class="modal" id="finEditModal">
+    <div class="modal-box" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3>✏️ EDIT TRANSAKSI</h3>
+            <button class="modal-close" onclick="closeModal('finEditModal')">×</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="finEditId">
+            <div class="field">
+                <label>Jumlah</label>
+                <input type="number" id="finEditAmount">
+            </div>
+            <div class="field">
+                <label>Kategori</label>
+                <input type="text" id="finEditCategory">
+            </div>
+            <div class="field">
+                <label>Catatan</label>
+                <input type="text" id="finEditNote">
+            </div>
+            <button class="save-btn" onclick="finSaveEdit()">💾 Simpan</button>
+        </div>
+    </div>
+                    </div>
+    
     <!-- ═══ MODALS ═══ -->
     <div class="modal" id="devModal">
         <div class="modal-box">
