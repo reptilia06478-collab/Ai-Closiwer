@@ -72,6 +72,7 @@
             <button class="tool-chip" onclick="openRecipeGenerator()">🍳 Recipe</button>
             <button class="tool-chip" onclick="openFinanceTracker()">💰 Finance</button>
             <button class="tool-chip" onclick="openCodeReviewer()">💻 Code</button>
+            <button class="tool-chip" onclick="openStudyBuddy()">📚 Study</button>
         </nav>
 
         <!-- CHAT AREA -->
@@ -615,6 +616,166 @@ console.log(sum(5, 10));" spellcheck="false" oninput="crUpdateLineNumbers()" ons
 
                 <!-- Result -->
                 <div class="cr-result" id="crResult" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+        <!-- ═══ STUDY BUDDY PANEL ═══ -->
+    <div class="modal" id="studyModal">
+        <div class="modal-box" style="max-width: 780px;">
+            <div class="modal-header">
+                <h3>📚 AI STUDY BUDDY</h3>
+                <button class="modal-close" onclick="closeModal('studyModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- Stats Summary -->
+                <div class="sb-stats-row">
+                    <div class="sb-stat-card">
+                        <div class="sb-stat-icon">🔥</div>
+                        <div class="sb-stat-value" id="sbStreak">0</div>
+                        <div class="sb-stat-label">Hari Streak</div>
+                    </div>
+                    <div class="sb-stat-card">
+                        <div class="sb-stat-icon">⏱️</div>
+                        <div class="sb-stat-value" id="sbTotalTime">0m</div>
+                        <div class="sb-stat-label">Total Belajar</div>
+                    </div>
+                    <div class="sb-stat-card">
+                        <div class="sb-stat-icon">🎴</div>
+                        <div class="sb-stat-value" id="sbCardsReviewed">0</div>
+                        <div class="sb-stat-label">Kartu Direview</div>
+                    </div>
+                    <div class="sb-stat-card">
+                        <div class="sb-stat-icon">🏆</div>
+                        <div class="sb-stat-value" id="sbBadges">0</div>
+                        <div class="sb-stat-label">Badge</div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="sb-tabs">
+                    <button class="sb-tab active" onclick="sbSetTab('subjects', this)">📚 Pelajaran</button>
+                    <button class="sb-tab" onclick="sbSetTab('materi', this)">📝 Materi</button>
+                    <button class="sb-tab" onclick="sbSetTab('flashcards', this)">🎴 Flashcards</button>
+                    <button class="sb-tab" onclick="sbSetTab('quiz', this)">❓ Quiz</button>
+                    <button class="sb-tab" onclick="sbSetTab('timer', this)">⏱️ Timer</button>
+                </div>
+
+                <!-- Subjects Tab -->
+                <div class="sb-content active" data-sb-tab="subjects">
+                    <div class="sb-add-row">
+                        <input type="text" id="sbNewSubject" class="sb-input" placeholder="Mata pelajaran baru... (contoh: Matematika, Fisika, Sejarah)">
+                        <button class="sb-btn-add" onclick="sbAddSubject()">+ Tambah</button>
+                    </div>
+                    <div class="sb-subjects-list" id="sbSubjectsList"></div>
+                </div>
+
+                <!-- Materi Tab -->
+                <div class="sb-content" data-sb-tab="materi">
+                    <div class="field">
+                        <label>📚 Pilih Pelajaran</label>
+                        <select id="sbMateriSubject" class="sb-select" onchange="sbRenderMateri()"></select>
+                    </div>
+                    <div class="field">
+                        <label>📖 Judul Materi</label>
+                        <input type="text" id="sbMateriTitle" class="sb-input" placeholder="contoh: Bab 1 - Pengenalan Aljabar">
+                    </div>
+                    <div class="field">
+                        <label>✏️ Isi Materi</label>
+                        <textarea id="sbMateriContent" class="sb-textarea" placeholder="Paste atau ketik materi belajar lu di sini...
+
+Contoh:
+Aljabar adalah cabang matematika yang menggunakan huruf dan simbol untuk mewakili angka.
+
+Rumus penting:
+- (a+b)² = a² + 2ab + b²
+- (a-b)² = a² - 2ab + b²
+- a² - b² = (a+b)(a-b)" rows="8"></textarea>
+                    </div>
+                    <button class="sb-btn-primary" onclick="sbSaveMateri()">💾 Simpan Materi</button>
+                    <div class="sb-materi-list" id="sbMateriList"></div>
+                </div>
+
+                <!-- Flashcards Tab -->
+                <div class="sb-content" data-sb-tab="flashcards">
+                    <div class="sb-materi-select-row">
+                        <select id="sbFlashSubject" class="sb-select" onchange="sbRenderFlashList()"></select>
+                        <button class="sb-btn-primary" onclick="sbGenerateFlashcards()">🤖 Generate</button>
+                    </div>
+                    <div class="sb-flash-list" id="sbFlashList"></div>
+                </div>
+
+                <!-- Quiz Tab -->
+                <div class="sb-content" data-sb-tab="quiz">
+                    <div class="sb-materi-select-row">
+                        <select id="sbQuizSubject" class="sb-select" onchange="sbRenderQuizList()"></select>
+                        <button class="sb-btn-primary" onclick="sbGenerateQuiz()">🤖 Generate Quiz</button>
+                    </div>
+                    <div class="sb-quiz-list" id="sbQuizList"></div>
+                </div>
+
+                <!-- Timer Tab -->
+                <div class="sb-content" data-sb-tab="timer">
+                    <div class="sb-timer-display">
+                        <div class="sb-timer-mode" id="sbTimerMode">⏱️ Pomodoro 25 menit</div>
+                        <div class="sb-timer-clock" id="sbTimerClock">25:00</div>
+                        <div class="sb-timer-presets">
+                            <button class="sb-preset-btn" onclick="sbSetTimerPreset(15)">15m</button>
+                            <button class="sb-preset-btn active" onclick="sbSetTimerPreset(25)">25m</button>
+                            <button class="sb-preset-btn" onclick="sbSetTimerPreset(45)">45m</button>
+                            <button class="sb-preset-btn" onclick="sbSetTimerPreset(60)">60m</button>
+                        </div>
+                        <div class="sb-timer-controls">
+                            <button class="sb-timer-btn start" id="sbTimerStartBtn" onclick="sbToggleTimer()">▶️ Mulai</button>
+                            <button class="sb-timer-btn reset" onclick="sbResetTimer()">🔄 Reset</button>
+                        </div>
+                        <div class="sb-timer-info">
+                            💡 <strong>Pomodoro Technique:</strong><br>
+                            Belajar fokus 25 menit, istirahat 5 menit. Ulangi 4x, istirahat panjang 15-30 menit.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ FLASHCARD REVIEW MODAL ═══ -->
+    <div class="modal" id="sbFlashModal">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>🎴 REVIEW FLASHCARD</h3>
+                <button class="modal-close" onclick="closeModal('sbFlashModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="sb-flash-progress" id="sbFlashProgress">Kartu 1 dari 10</div>
+                <div class="sb-flash-card" id="sbFlashCard" onclick="sbFlipCard()">
+                    <div class="sb-flash-front" id="sbFlashFront">Pertanyaan...</div>
+                    <div class="sb-flash-back" id="sbFlashBack" style="display:none;">Jawaban...</div>
+                </div>
+                <div class="sb-flash-hint">👆 Tap kartu untuk lihat jawaban</div>
+                <div class="sb-flash-actions" id="sbFlashActions" style="display:none;">
+                    <button class="sb-flash-btn wrong" onclick="sbAnswerCard(false)">❌ Belum Hafal</button>
+                    <button class="sb-flash-btn right" onclick="sbAnswerCard(true)">✅ Udah Hafal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ QUIZ MODAL ═══ -->
+    <div class="modal" id="sbQuizModal">
+        <div class="modal-box" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>❓ QUIZ TIME</h3>
+                <button class="modal-close" onclick="closeModal('sbQuizModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="sb-quiz-header">
+                    <div class="sb-quiz-progress" id="sbQuizProgress">Soal 1 dari 5</div>
+                    <div class="sb-quiz-score" id="sbQuizScore">Score: 0</div>
+                </div>
+                <div class="sb-quiz-question" id="sbQuizQuestion">Pertanyaan...</div>
+                <div class="sb-quiz-options" id="sbQuizOptions"></div>
+                <div class="sb-quiz-feedback" id="sbQuizFeedback"></div>
             </div>
         </div>
     </div>
