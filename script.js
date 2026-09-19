@@ -5303,3 +5303,186 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
 /* ═══ 5. VERSION CHECK ═══ */
 console.log('%c🎯 CLOSIWER AI v6.0', 'color: #d97757; font-size: 16px; font-weight: bold;');
 console.log('%cBatch 1: PWA + Performance + Bug Fixes ✅', 'color: #4ade80; font-size: 12px;');
+/* ═══════════════════════════════════════
+   CAMERA INTEGRATION
+═══════════════════════════════════════ */
+
+var cameraStream = null;
+var capturedImageData = null;
+
+/* Open camera modal */
+async function openCameraModal() {
+    var modal = document.getElementById('cameraModal');
+    var video = document.getElementById('cameraVideo');
+    
+    if (!modal || !video) return;
+    
+    /* Cek support */
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('❌ Browser tidak support kamera');
+        return;
+    }
+    
+    try {
+        modal.classList.add('show');
+        
+        /* Request camera — prefer back camera */
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: 'environment' },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        });
+        
+        video.srcObject = cameraStream;
+        video.play();
+        
+        console.log('📷 Camera started');
+    } catch (err) {
+        console.error('❌ Camera error:', err);
+        modal.classList.remove('show');
+        
+        if (err.name === 'NotAllowedError') {
+            showToast('❌ Izin kamera ditolak');
+        } else if (err.name === 'NotFoundError') {
+            showToast('❌ Kamera tidak ditemukan');
+        } else {
+            showToast('❌ Gagal buka kamera');
+        }
+    }
+}
+
+/* Close camera modal */
+function closeCameraModal() {
+    var modal = document.getElementById('cameraModal');
+    if (modal) modal.classList.remove('show');
+    
+    /* Stop camera stream */
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(function(track) {
+            track.stop();
+        });
+        cameraStream = null;
+    }
+    
+    console.log('📷 Camera stopped');
+}
+
+/* Capture photo */
+function capturePhoto() {
+    var video = document.getElementById('cameraVideo');
+    var canvas = document.getElementById('cameraCanvas');
+    
+    if (!video || !canvas) return;
+    
+    var width = video.videoWidth || 1280;
+    var height = video.videoHeight || 720;
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, width, height);
+    
+    /* Get image data */
+    capturedImageData = canvas.toDataURL('image/jpeg', 0.85);
+    
+    /* Close camera */
+    closeCameraModal();
+    
+    /* Show preview */
+    showImagePreview(capturedImageData);
+    
+    console.log('📸 Photo captured:', width + 'x' + height);
+}
+
+/* Show image preview */
+function showImagePreview(dataUrl) {
+    var modal = document.getElementById('imagePreviewModal');
+    var img = document.getElementById('imagePreviewImg');
+    
+    if (!modal || !img) return;
+    
+    img.src = dataUrl;
+    modal.classList.add('show');
+}
+
+/* Close preview */
+function closeImagePreview() {
+    var modal = document.getElementById('imagePreviewModal');
+    if (modal) modal.classList.remove('show');
+    capturedImageData = null;
+}
+
+/* Send image to chat */
+async function sendImageToChat() {
+    if (!capturedImageData) return;
+    
+    var imgData = capturedImageData;
+    closeImagePreview();
+    
+    /* Konversi data URL ke File */
+    try {
+        var blob = await (await fetch(imgData)).blob();
+        var file = new File([blob], 'camera-photo-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+        
+        /* Set sebagai uploaded file */
+        if (typeof state !== 'undefined') {
+            state.uploadedFile = file;
+            state.uploadedFile.dataUrl = imgData;
+            state.uploadedFile.isImage = true;
+        }
+        
+        /* Add to chat as user message */
+        var s = state.sessions.find(function(x) { return x.id === state.currentSessionId; });
+        if (s) {
+            s.messages.push({
+                role: 'user',
+                content: '[Foto dari kamera]',
+                timestamp: Date.now(),
+                isHtml: true,
+                htmlContent: '<p>📸 Foto dari kamera</p><img src="' + imgData + '" class="chat-image-attachment" onclick="window.open(this.src)">'
+            });
+            updateCurrentSession(s.messages);
+            renderMessages();
+            scrollBottom();
+        }
+        
+        /* Auto-fill prompt hint */
+        var input = document.getElementById('userInput');
+        if (input && !input.value) {
+            input.value = 'Jelaskan gambar ini: ';
+            input.focus();
+        }
+        
+        if (typeof updateSendBtn === 'function') updateSendBtn();
+        showToast('📸 Foto siap dikirim!');
+        
+    } catch (e) {
+        console.error('❌ Send image error:', e);
+        showToast('❌ Gagal memproses foto');
+    }
+}
+
+/* Cleanup camera when modal closed */
+document.addEventListener('click', function(e) {
+    var modal = document.getElementById('cameraModal');
+    if (modal && e.target === modal) {
+        closeCameraModal();
+    }
+    var preview = document.getElementById('imagePreviewModal');
+    if (preview && e.target === preview) {
+        closeImagePreview();
+    }
+});
+
+/* Handle Escape key */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeCameraModal();
+        closeImagePreview();
+    }
+});
+
+console.log('📷 Camera Integration loaded');
