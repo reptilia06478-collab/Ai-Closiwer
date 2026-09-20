@@ -601,8 +601,14 @@
 
 /* ═══ APP HIDDEN ═══ */
 .app-container {
-    opacity: 0;
+    opacity: 1;
     transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 10;
+}
+
+.app-container.loaded {
+    opacity: 1;
 }
 
 .app-container.loaded {
@@ -626,7 +632,14 @@
 
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; background: var(--bg-base); color: var(--text-primary); overflow: hidden; }
+html, body {
+    height: 100%;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+}
 
 :root {
     --primary: #d97757;
