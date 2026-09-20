@@ -5089,22 +5089,32 @@ function hideLoader() {
     var loader = document.getElementById('closiwerLoader');
     var app = document.querySelector('.app-container');
     
-    if (!loader) return;
-    
-    loader.classList.add('fade-out');
-    if (app) app.classList.add('loaded');
-    
-    setTimeout(function() {
+    if (loader) {
+        loader.classList.add('fade-out');
         loader.classList.add('hidden');
+        loader.style.display = 'none';
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        loader.style.pointerEvents = 'none';
+        loader.style.zIndex = '-1';
+        
         setTimeout(function() {
             if (loader.parentNode) loader.parentNode.removeChild(loader);
         }, 500);
-    }, 1000);
+    }
     
-    if (typeof initParticles === 'function') setTimeout(initParticles, 200);
-    if (typeof initMatrix === 'function') setTimeout(initMatrix, 400);
+    if (app) {
+        app.classList.add('loaded');
+        app.style.opacity = '1';
+    }
     
-    console.log('✅ CLOSIWER loaded with cinematic animation!');
+    /* UNLOCK BODY SCROLL — PENTING! */
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.height = '';
+    document.documentElement.style.overflow = '';
+    
+    console.log('✅ Loader hidden + body unlocked');
 }
 
 /* ═══ SKIP ═══ */
@@ -5127,11 +5137,28 @@ if (document.readyState === 'loading') {
 
 /* ═══ FALLBACK ═══ */
 setTimeout(function() {
-    if (!loaderState.done) {
-        console.log('⏰ Loader timeout, forcing hide');
-        skipLoader();
+    var loader = document.getElementById('closiwerLoader');
+    if (loader) {
+        loader.style.display = 'none';
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        loader.style.pointerEvents = 'none';
+        loader.style.zIndex = '-1';
+        if (loader.parentNode) loader.parentNode.removeChild(loader);
+        console.log('⚠️ Loader force-hidden (fallback 8s)');
     }
-}, 15000);
+    
+    var app = document.querySelector('.app-container');
+    if (app) {
+        app.classList.add('loaded');
+        app.style.opacity = '1';
+    }
+    
+    /* UNLOCK BODY */
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.documentElement.style.overflow = '';
+}, 8000);
 
 console.log('🎬 CINEMATIC LOADER v3.0 loaded!');
 /* ═══════════════════════════════════════
