@@ -1450,7 +1450,175 @@ https://example.com/image2.png"></textarea>
         </div>
     </div>
 </div>
-    
+
+        <!-- ═══ HTML TO WEBSITE MODAL ═══ -->
+    <div class="modal" id="htmlToWebsiteModal">
+        <div class="modal-box" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>🌐 HTML TO WEBSITE</h3>
+                <button class="modal-close" onclick="closeModal('htmlToWebsiteModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="htw-tabs">
+                    <button class="htw-tab active" onclick="htwSetTab('editor', this)">📝 Editor</button>
+                    <button class="htw-tab" onclick="htwSetTab('preview', this)">👁️ Preview</button>
+                    <button class="htw-tab" onclick="htwSetTab('guide', this)">📖 Panduan</button>
+                </div>
+                <div class="htw-content active" data-htw-tab="editor">
+                    <div class="htw-info-box">
+                        <strong>💡 Cara Pakai:</strong><br>
+                        Paste HTML → Preview → Download → Deploy ke Vercel
+                    </div>
+                    <div class="field">
+                        <label>📄 Kode HTML</label>
+                        <textarea id="htwHtmlCode" class="htw-code-editor" placeholder="<!DOCTYPE html>
+<html>
+<head><title>Website Saya</title></head>
+<body><h1>Hello World!</h1></body>
+</html>" oninput="htwUpdatePreview()"></textarea>
+                    </div>
+                    <div class="htw-buttons">
+                        <button class="htw-btn primary" onclick="htwUpdatePreview()">👁️ Preview</button>
+                        <button class="htw-btn" onclick="htwDownload()">📥 Download</button>
+                        <button class="htw-btn" onclick="htwClear()">🗑️ Clear</button>
+                    </div>
+                </div>
+                <div class="htw-content" data-htw-tab="preview">
+                    <div class="htw-preview-frame">
+                        <iframe id="htwPreviewIframe" sandbox="allow-scripts allow-same-origin"></iframe>
+                    </div>
+                </div>
+                <div class="htw-content" data-htw-tab="guide">
+                    <div class="htw-guide">
+                        <h3>📖 Panduan Deploy ke Vercel</h3>
+                        <div class="htw-guide-step">
+                            <div class="htw-guide-num">1</div>
+                            <div class="htw-guide-body">
+                                <strong>Persiapan File</strong>
+                                <p>Bikin folder → isi <code>index.html</code></p>
+                            </div>
+                        </div>
+                        <div class="htw-guide-step">
+                            <div class="htw-guide-num">2</div>
+                            <div class="htw-guide-body">
+                                <strong>Daftar Vercel</strong>
+                                <p>Buka <a href="https://vercel.com/signup" target="_blank">vercel.com/signup</a></p>
+                            </div>
+                        </div>
+                        <div class="htw-guide-step">
+                            <div class="htw-guide-num">3</div>
+                            <div class="htw-guide-body">
+                                <strong>Deploy</strong>
+                                <p>Buka <a href="https://vercel.com/new" target="_blank">vercel.com/new</a> → drag folder → Deploy</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ MEDIA DOWNLOADER MODAL ═══ -->
+    <div class="modal" id="mediaDownloaderModal">
+        <div class="modal-box" style="max-width: 750px;">
+            <div class="modal-header">
+                <h3>📥 MEDIA DOWNLOADER</h3>
+                <button class="modal-close" onclick="closeModal('mediaDownloaderModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="md-tabs">
+                    <button class="md-tab active" onclick="mdSetTab('single', this)">🔗 Single</button>
+                    <button class="md-tab" onclick="mdSetTab('batch', this)">📚 Batch</button>
+                    <button class="md-tab" onclick="mdSetTab('external', this)">🌐 YouTube</button>
+                </div>
+                <div class="md-content active" data-md-tab="single">
+                    <div class="md-info-box">
+                        <strong>💡 Paste URL</strong> gambar/video/audio → Download
+                    </div>
+                    <div class="field">
+                        <label>🔗 Media URL</label>
+                        <input type="url" id="mdUrl" class="md-input" placeholder="https://example.com/image.jpg" oninput="mdPreview()">
+                    </div>
+                    <div class="md-preview" id="mdPreviewArea" style="display:none;">
+                        <div class="md-preview-body" id="mdPreviewBody"></div>
+                    </div>
+                    <div class="md-buttons">
+                        <button class="md-btn primary" onclick="mdDownload()">📥 Download</button>
+                        <button class="md-btn" onclick="mdCopyUrl()">📋 Copy</button>
+                    </div>
+                </div>
+                <div class="md-content" data-md-tab="batch">
+                    <div class="md-info-box"><strong>💡 Batch:</strong> Paste banyak URL (1 per baris)</div>
+                    <div class="field">
+                        <textarea id="mdBatchUrls" class="md-textarea" rows="6"></textarea>
+                    </div>
+                    <button class="md-btn primary" onclick="mdBatchDownload()">📥 Download Semua</button>
+                    <div class="md-batch-status" id="mdBatchStatus"></div>
+                </div>
+                <div class="md-content" data-md-tab="external">
+                    <div class="md-warning-box">
+                        <strong>⚠️ YouTube/TikTok downloader</strong> — gak bisa langsung, tapi ini link ke situs populer:
+                    </div>
+                    <div class="md-external-grid">
+                        <a href="https://y2mate.com" target="_blank" class="md-external-card"><div class="md-external-icon">▶️</div><div class="md-external-name">Y2Mate</div></a>
+                        <a href="https://snaptik.app" target="_blank" class="md-external-card"><div class="md-external-icon">🎵</div><div class="md-external-name">SnapTik</div></a>
+                        <a href="https://savefrom.net" target="_blank" class="md-external-card"><div class="md-external-icon">💾</div><div class="md-external-name">SaveFrom</div></a>
+                        <a href="https://snapinsta.app" target="_blank" class="md-external-card"><div class="md-external-icon">📷</div><div class="md-external-name">SnapInsta</div></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ QR + BRAT MODAL ═══ -->
+    <div class="modal" id="qrBratModal">
+        <div class="modal-box" style="max-width: 750px;">
+            <div class="modal-header">
+                <h3>🎨 QR + BRAT</h3>
+                <button class="modal-close" onclick="closeModal('qrBratModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="qb-tabs">
+                    <button class="qb-tab active" onclick="qbSetTab('qr', this)">📱 QR Code</button>
+                    <button class="qb-tab" onclick="qbSetTab('brat', this)">💚 Brat</button>
+                </div>
+                <div class="qb-content active" data-qb-tab="qr">
+                    <div class="field">
+                        <label>📝 Text / URL</label>
+                        <textarea id="qbQrText" class="qb-textarea" rows="3" placeholder="https://example.com" oninput="qbUpdateQR()"></textarea>
+                    </div>
+                    <div class="qb-row">
+                        <div class="field">
+                            <label>📐 Ukuran</label>
+                            <select id="qbQrSize" class="qb-select" onchange="qbUpdateQR()">
+                                <option value="200">Kecil</option>
+                                <option value="400" selected>Sedang</option>
+                                <option value="600">Besar</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>🎨 Warna</label>
+                            <input type="color" id="qbQrColor" value="#d97757" class="qb-color" onchange="qbUpdateQR()">
+                        </div>
+                    </div>
+                    <div class="qb-preview-box" id="qbQrPreview">
+                        <div class="qb-preview-placeholder">📱 QR muncul di sini</div>
+                    </div>
+                    <button class="qb-btn primary" onclick="qbDownloadQR()">📥 Download QR</button>
+                </div>
+                <div class="qb-content" data-qb-tab="brat">
+                    <div class="field">
+                        <label>✍️ Text (max 100)</label>
+                        <textarea id="qbBratText" class="qb-textarea" rows="3" maxlength="100" oninput="qbUpdateBrat()"></textarea>
+                    </div>
+                    <div class="qb-brat-preview-wrap">
+                        <canvas id="qbBratCanvas" class="qb-brat-canvas"></canvas>
+                    </div>
+                    <button class="qb-btn primary" onclick="qbDownloadBrat()">📥 Download Brat</button>
+                </div>
+            </div>
+        </div>
+                                                                                                                                                                                     </div>
     <!-- ═══ MODALS ═══ -->
     <div class="modal" id="devModal">
         <div class="modal-box">
