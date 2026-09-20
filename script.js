@@ -5583,3 +5583,85 @@ setTimeout(function() {
 }, 2000);
 
 console.log('🛠️ Sidebar Tools loaded');
+/* ═══════════════════════════════════════
+   FIX SCROLL LOCK — UNLOCK SEMUA
+═══════════════════════════════════════ */
+
+/* Force unlock body + html */
+function forceUnlockScroll() {
+    document.body.style.overflow = '';
+    document.body.style.overflowX = '';
+    document.body.style.overflowY = '';
+    document.body.style.position = '';
+    document.body.style.height = '';
+    document.body.style.width = '';
+    
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overflowX = '';
+    document.documentElement.style.overflowY = '';
+    document.documentElement.style.position = '';
+    document.documentElement.style.height = '';
+    
+    var app = document.getElementById('app');
+    if (app) {
+        app.style.overflow = '';
+        app.style.position = '';
+    }
+    
+    var appContainer = document.querySelector('.app-container');
+    if (appContainer) {
+        appContainer.style.overflow = '';
+        appContainer.style.position = '';
+        appContainer.style.opacity = '1';
+    }
+    
+    console.log('🔓 Scroll unlocked');
+}
+
+/* Force show app */
+function forceShowApp() {
+    var appContainer = document.querySelector('.app-container');
+    if (appContainer) {
+        appContainer.style.opacity = '1';
+        appContainer.style.visibility = 'visible';
+        appContainer.classList.add('loaded');
+    }
+    
+    /* Hapus loader dari DOM */
+    var loader = document.getElementById('closiwerLoader');
+    if (loader) {
+        loader.style.display = 'none';
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        loader.style.pointerEvents = 'none';
+        loader.style.zIndex = '-1';
+        if (loader.parentNode) loader.parentNode.removeChild(loader);
+    }
+    
+    console.log('✅ App force-shown');
+}
+
+/* Jalanin saat halaman load */
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        forceUnlockScroll();
+        forceShowApp();
+    }, 3000);
+});
+
+/* Jalanin saat user scroll/click (fallback) */
+document.addEventListener('touchstart', function() {
+    forceUnlockScroll();
+}, { passive: true, once: false });
+
+/* Jalanin setiap 5 detik (safety) */
+setInterval(function() {
+    forceUnlockScroll();
+}, 5000);
+
+/* Jalanin saat user klik apapun */
+document.addEventListener('click', function(e) {
+    forceUnlockScroll();
+}, { passive: true });
+
+console.log('🔓 Scroll unlock script loaded');
