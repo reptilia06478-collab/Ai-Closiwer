@@ -5486,3 +5486,73 @@ document.addEventListener('keydown', function(e) {
 });
 
 console.log('📷 Camera Integration loaded');
+/* ═══════════════════════════════════════
+   SIDEBAR TOOLS — Render di Sidebar
+═══════════════════════════════════════ */
+var toolsRegistry = [
+    {
+        id: 'html_to_web',
+        icon: '🌐',
+        name: 'HTML → Web',
+        desc: 'Deploy HTML jadi website',
+        category: 'web',
+        badge: 'HOT',
+        action: 'openHtmlToWebsite'
+    },
+    {
+        id: 'media_downloader',
+        icon: '📥',
+        name: 'Media Downloader',
+        desc: 'Download gambar/video/audio',
+        category: 'media',
+        action: 'openMediaDownloader'
+    },
+    {
+        id: 'qr_brat',
+        icon: '🎨',
+        name: 'QR + Brat',
+        desc: 'QR Code & Brat Generator',
+        category: 'media',
+        badge: 'NEW',
+        action: 'openQrBrat'
+    }
+];
+
+/* Render tools di sidebar */
+function renderSidebarTools() {
+    var list = document.getElementById('sidebarToolsList');
+    if (!list) return;
+    
+    /* Ambil 3 tools pertama aja (yang penting-penting) */
+    var topTools = toolsRegistry.slice(0, 3);
+    
+    var html = '';
+    for (var i = 0; i < topTools.length; i++) {
+        var t = topTools[i];
+        var badge = '';
+        if (t.badge === 'NEW') badge = '<span class="sidebar-tool-badge new">NEW</span>';
+        else if (t.badge === 'HOT') badge = '<span class="sidebar-tool-badge hot">HOT</span>';
+        
+        html += '<button class="sidebar-tool-item" onclick="thOpenTool(\'' + t.id + '\')">';
+        html += '<span class="sidebar-tool-icon">' + t.icon + '</span>';
+        html += '<span class="sidebar-tool-name">' + t.name + '</span>';
+        html += badge;
+        html += '<span class="sidebar-tool-arrow">›</span>';
+        html += '</button>';
+    }
+    
+    list.innerHTML = html;
+}
+
+/* Update tools list saat registry berubah */
+function updateSidebarTools() {
+    renderSidebarTools();
+}
+
+/* Auto-render saat halaman load */
+setTimeout(function() {
+    renderSidebarTools();
+    console.log('🛠️ Sidebar Tools rendered');
+}, 2000);
+
+console.log('🛠️ Sidebar Tools loaded');
