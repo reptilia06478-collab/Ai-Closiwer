@@ -30,8 +30,13 @@
     pointer-events: none;
 }
 
-.cinematic-loader.hidden {
-    display: none;
+.cinematic-loader.hidden,
+.cinematic-loader.done {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
 }
 
 /* ═══ ANIMATED BACKGROUND ═══ */
