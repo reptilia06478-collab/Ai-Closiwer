@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════
-   CLOSIWER AI v5.0 - Core Logic
+   CLOSIWER AI v6.0 - Core Logic
    Developed by PANN
 ═══════════════════════════════════════ */
 
@@ -25,7 +25,7 @@ var state = {
 var config = {
     apiKey: localStorage.getItem('closiwer_key') || '',
     provider: localStorage.getItem('closiwer_provider') || 'groq',
-    model: localStorage.getItem('closiwer_model') || 'llama-3.1-8b-instant'
+    model: localStorage.getItem('closiwer_model') || 'openai/gpt-oss-safeguard-20b'
 };
 
 /* ═══ SYSTEM PROMPT (Anti-Halusinasi) ═══ */
@@ -120,7 +120,7 @@ window.addEventListener('load', function() {
     loadColor();
     loadLang();
     setupKeyboardShortcuts();
-    console.log('CLOSIWER AI v5.0 by PANN ready! ✅');
+    console.log('CLOSIWER AI v6.0 by PANN ready! ✅');
 });
 
 function loadTheme() {
@@ -546,7 +546,7 @@ function generateImage(prompt) {
         addMessage('assistant', c, true);
         state.isTyping = false;
         updateSendBtn();
-        showToast('✅ Gambar dibuat!');
+        showToast('✅ Gambar Sedang Di Buat!');
     }, 100);
 }
 
@@ -679,10 +679,10 @@ function simulate(text) {
 function getSimResponse(text) {
     var p = text.toLowerCase();
     if (/^(halo|hai|hello|hi|hey|pagi|siang|sore|malam)/.test(p)) {
-        return 'Halo! 👋 Saya **CLOSIWER AI v5.0** — dibuat oleh **PANN**!\n\n### 🎯 Fitur Baru v5.0:\n• 🎵 **Music Player** — Spotify-like\n• 📝 **Notes** — Markdown editor\n• ✅ **Tasks** — Task manager\n• 📅 **Calendar** — Event & reminder\n• 🎮 **Mini Games** — Snake, 2048\n• 📊 **Analytics** — Stats penggunaan\n• 🌐 **Multi-Bahasa** — ID/EN/JP\n• ⌘ **Command Palette** — Ctrl+K\n• 🟢 **Matrix Rain** bg\n\n💡 **Aktifkan AI asli:**\n1. Klik **DEV**\n2. Daftar di [console.groq.com/keys](https://console.groq.com/keys)\n3. Paste → Simpan';
+        return 'Halo! 👋 Saya **CLOSIWER AI v6.0** — dibuat oleh **PANN**!\n\n### 🎯 Fitur Baru v6.0:\n• 🎵 **Music Player** — Spotify-like\n• 📝 **Notes** — Markdown editor\n• ✅ **Tasks** — Task manager\n• 📅 **Calendar** — Event & reminder\n• 🎮 **Mini Games** — Snake, 2048\n• 📊 **Analytics** — Stats penggunaan\n• 🌐 **Multi-Bahasa** — ID/EN/JP\n• ⌘ **Command Palette** — Ctrl+K\n• 🟢 **Matrix Rain** bg\n\n💡 **Aktifkan AI asli:**\n1. Klik **DEV**\n2. Daftar di [console.groq.com/keys](https://console.groq.com/keys)\n3. Paste → Simpan';
     }
     if (p.indexOf('pann') !== -1 || p.indexOf('pembuat') !== -1 || p.indexOf('creator') !== -1) {
-        return '## 👨💻 Tentang Developer\n\n**PANN** adalah developer di balik **CLOSIWER AI v5.0**.\n\n### 🎯 Visi:\nAI **GRATIS 100%** untuk semua orang — tanpa batasan, tanpa paywall.\n\n### ✨ Fitur yang udah dibuat PANN:\n• ✅ Chat AI unlimited\n• ✅ Image generation gratis\n• ✅ Web search gratis\n• ✅ Multi-session\n• ✅ 5 tema warna\n• ✅ Animasi background (3 mode)\n• ✅ Music Player\n• ✅ Notes & Tasks\n• ✅ Calendar\n• ✅ Mini Games\n\n**Semua GRATIS, selamanya!** 🔥';
+        return '## 👨💻 Tentang Developer\n\n**PANN** adalah developer di balik **CLOSIWER AI v6.0**.\n\n### 🎯 Visi:\nAI **GRATIS 100%** untuk semua orang — tanpa batasan, tanpa paywall.\n\n### ✨ Fitur yang udah dibuat PANN:\n• ✅ Chat AI unlimited\n• ✅ Image generation gratis\n• ✅ Web search gratis\n• ✅ Multi-session\n• ✅ 5 tema warna\n• ✅ Animasi background (3 mode)\n• ✅ Music Player\n• ✅ Notes & Tasks\n• ✅ Calendar\n• ✅ Mini Games\n\n**Semua GRATIS, selamanya!** 🔥';
     }
     if (p.indexOf('integral') !== -1) {
         return '## 📐 Integral Solver\n\n**Soal:** ∫ (2x³ + 3x² - 5x + 7) dx\n\n### Step-by-step:\n```\n∫ 2x³ dx = x⁴/2\n∫ 3x² dx = x³\n∫ 5x dx  = 5x²/2\n∫ 7 dx   = 7x\n```\n\n✅ **Hasil: x⁴/2 + x³ - 5x²/2 + 7x + C**';
@@ -690,7 +690,7 @@ function getSimResponse(text) {
     if (p.indexOf('react') !== -1 || p.indexOf('todo') !== -1) {
         return '## 💻 React Todo List\n\n```jsx\nimport { useState, useEffect } from "react";\n\nfunction TodoApp() {\n  const [todos, setTodos] = useState([]);\n  const [input, setInput] = useState("");\n\n  useEffect(() => {\n    const saved = localStorage.getItem("todos");\n    if (saved) setTodos(JSON.parse(saved));\n  }, []);\n\n  useEffect(() => {\n    localStorage.setItem("todos", JSON.stringify(todos));\n  }, [todos]);\n\n  return (\n    <div>\n      <input value={input} onChange={e => setInput(e.target.value)} />\n      <ul>{todos.map(t => <li key={t.id}>{t.text}</li>)}</ul>\n    </div>\n  );\n}\n```';
     }
-    return '📝 **"' + escapeHtml(text) + '"**\n\nMode simulasi — untuk AI asli:\n\n1. Klik **DEV**\n2. Dapatkan key GRATIS di [console.groq.com/keys](https://console.groq.com/keys)\n3. Paste → Simpan\n\n### 🎯 Fitur baru v5.0:\n• 🎵 Music Player\n• 📝 Notes\n• ✅ Tasks\n• 📅 Calendar\n• 🎮 Games\n• 📊 Stats\n• ⌘ Command Palette (Ctrl+K)\n\n**Built by PANN** 💪';
+    return '📝 **"' + escapeHtml(text) + '"**\n\nMode simulasi — untuk AI asli:\n\n1. Klik **DEV**\n2. Dapatkan key GRATIS di [console.groq.com/keys](https://console.groq.com/keys)\n3. Paste → Simpan\n\n### 🎯 Fitur baru v6.0:\n• 🎵 Music Player\n• 📝 Notes\n• ✅ Tasks\n• 📅 Calendar\n• 🎮 Games\n• 📊 Stats\n• ⌘ Command Palette (Ctrl+K)\n\n**Built by PANN** 💪';
 }
 
 /* ═══ RENDER MESSAGES ═══ */
@@ -834,7 +834,7 @@ function exportChat() {
         }
         all.push('---\n');
     }
-    var text = '# CLOSIWER AI v5.0 by PANN\n\n' + new Date().toLocaleString('id-ID') + '\n\n---\n\n' + all.join('\n');
+    var text = '# CLOSIWER AI v6.0 by PANN\n\n' + new Date().toLocaleString('id-ID') + '\n\n---\n\n' + all.join('\n');
     var blob = new Blob([text], { type: 'text/markdown' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -5513,76 +5513,6 @@ document.addEventListener('keydown', function(e) {
 });
 
 console.log('📷 Camera Integration loaded');
-/* ═══════════════════════════════════════
-   SIDEBAR TOOLS — Render di Sidebar
-═══════════════════════════════════════ */
-var toolsRegistry = [
-    {
-        id: 'html_to_web',
-        icon: '🌐',
-        name: 'HTML → Web',
-        desc: 'Deploy HTML jadi website',
-        category: 'web',
-        badge: 'HOT',
-        action: 'openHtmlToWebsite'
-    },
-    {
-        id: 'media_downloader',
-        icon: '📥',
-        name: 'Media Downloader',
-        desc: 'Download gambar/video/audio',
-        category: 'media',
-        action: 'openMediaDownloader'
-    },
-    {
-        id: 'qr_brat',
-        icon: '🎨',
-        name: 'QR + Brat',
-        desc: 'QR Code & Brat Generator',
-        category: 'media',
-        badge: 'NEW',
-        action: 'openQrBrat'
-    }
-];
-
-/* Render tools di sidebar */
-function renderSidebarTools() {
-    var list = document.getElementById('sidebarToolsList');
-    if (!list) return;
-    
-    /* Ambil 3 tools pertama aja (yang penting-penting) */
-    var topTools = toolsRegistry.slice(0, 3);
-    
-    var html = '';
-    for (var i = 0; i < topTools.length; i++) {
-        var t = topTools[i];
-        var badge = '';
-        if (t.badge === 'NEW') badge = '<span class="sidebar-tool-badge new">NEW</span>';
-        else if (t.badge === 'HOT') badge = '<span class="sidebar-tool-badge hot">HOT</span>';
-        
-        html += '<button class="sidebar-tool-item" onclick="thOpenTool(\'' + t.id + '\')">';
-        html += '<span class="sidebar-tool-icon">' + t.icon + '</span>';
-        html += '<span class="sidebar-tool-name">' + t.name + '</span>';
-        html += badge;
-        html += '<span class="sidebar-tool-arrow">›</span>';
-        html += '</button>';
-    }
-    
-    list.innerHTML = html;
-}
-
-/* Update tools list saat registry berubah */
-function updateSidebarTools() {
-    renderSidebarTools();
-}
-
-/* Auto-render saat halaman load */
-setTimeout(function() {
-    renderSidebarTools();
-    console.log('🛠️ Sidebar Tools rendered');
-}, 2000);
-
-console.log('🛠️ Sidebar Tools loaded');
 /* ═══════════════════════════════════════
    FIX SCROLL LOCK — UNLOCK SEMUA
 ═══════════════════════════════════════ */
